@@ -41,14 +41,26 @@
       var params = new URLSearchParams(location.search);
 
       // crop 은 이 감싸기 페이지 전용이라 앱으로 넘기지 않습니다.
+      // 페이지를 오가도 시험하던 값이 유지되도록 잠깐 기억해 둡니다.
+      try {
+        var saved = sessionStorage.getItem('cropPx');
+        if (saved !== null) CROP_PX = parseInt(saved, 10) || 0;
+      } catch (err) {}
+
       if (params.has('crop')) {
         var c = parseInt(params.get('crop'), 10);
-        if (!isNaN(c)) CROP_PX = c;
+        if (!isNaN(c)) {
+          CROP_PX = c;
+          try { sessionStorage.setItem('cropPx', String(c)); } catch (err) {}
+        }
         params.delete('crop');
       }
 
-      var rest = params.toString();
-      var src  = APP_URL + (rest ? '?' + rest : '');
+      // 앱이 '감싸기 안에서 열렸다'는 것을 알 수 있게 표시를 붙입니다.
+      // 이게 있어야 페이지를 오갈 때 감싸기가 풀리지 않습니다.
+      params.set('wrap', '1');
+
+      var src = APP_URL + '?' + params.toString();
 
       var frame = document.getElementById('app');
       frame.style.top    = (-CROP_PX) + 'px';
