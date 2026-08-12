@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>🌸 길드전 오더판</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f7f7f8; }
+    #wrap { position: fixed; inset: 0; overflow: hidden; }
+    #app  { position: absolute; left: 0; width: 100%; border: 0; display: block; }
+
+    #warn { position: fixed; left: 0; right: 0; bottom: 0; background: #263238; color: #fff;
+            font-family: 'Malgun Gothic', sans-serif; font-size: 13px; padding: 12px 14px;
+            display: none; z-index: 10; line-height: 1.6; }
+    #warn a { color: #B2FF59; }
+  </style>
+</head>
+<body>
+  <div id="wrap"><iframe id="app" title="길드전 오더판"></iframe></div>
+
+  <div id="warn">
+    화면이 안 뜨나요? 브라우저가 이 방식을 막고 있을 수 있습니다.
+    <a id="direct" href="#" target="_blank">원래 주소로 열기 ▶</a>
+  </div>
+
+  <script>
+    const APP_URL  = 'https://script.google.com/macros/s/AKfycbztf1sGbFAjXoha9Q6jG9AstztTfdjNGkVQ85cRSUXFEU-1RVreRMd-t26XKXtSfEGW/exec';
+    const CROP_PX  = 0;
+
+    const frame = document.getElementById('app');
+
+    // 주소 뒤의 ?page=register 같은 것을 그대로 넘겨줍니다.
+    const qs  = location.search || '';
+    const src = APP_URL + qs;
+
+    frame.style.top    = (-CROP_PX) + 'px';
+    frame.style.height = 'calc(100% + ' + CROP_PX + 'px)';
+    frame.src = src;
+    document.getElementById('direct').href = src;
+
+    // 6초 안에 로드되지 않으면 원래 주소 안내를 띄웁니다.
+    let loaded = false;
+    frame.addEventListener('load', function () { loaded = true; });
+    setTimeout(function () {
+      if (!loaded) document.getElementById('warn').style.display = 'block';
+    }, 6000);
+  </script>
+</body>
+</html>
