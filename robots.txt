@@ -1,2 +1,20 @@
+# 검색엔진에는 노출하지 않되,
+# 메신저 링크 미리보기(카카오톡 등)는 읽을 수 있게 허용합니다.
+
+User-agent: kakaotalk-scrap
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
 User-agent: *
 Disallow: /

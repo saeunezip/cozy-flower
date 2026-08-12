@@ -4,7 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <title> 길드전 계산기</title>
+  <title>길드전 계산기</title>
+
+  <!-- 카카오톡·디스코드 등에서 링크를 공유할 때 보이는 정보 -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="길드전 계산기">
+  <meta property="og:title"       content="길드전 계산기">
+  <meta property="og:description" content="더 코지 플로리스트 · 꽃 해금 현황과 추천 임무를 한눈에">
+  <meta property="og:url"         content="https://shrimpmaeng.github.io/cozy-flower/app.html">
+  <meta property="og:image"       content="https://shrimpmaeng.github.io/cozy-flower/preview.png">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card"  content="summary_large_image">
+  <meta name="twitter:title" content="길드전 계산기">
   <style>
     html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f7f7f8; }
     #wrap { position: fixed; inset: 0; overflow: hidden; }
@@ -13,15 +25,15 @@
     #warn { position: fixed; left: 0; right: 0; bottom: 0; background: #263238; color: #fff;
             font-family: 'Malgun Gothic', sans-serif; font-size: 13px; padding: 13px 14px;
             display: none; z-index: 10; line-height: 1.7; }
-    #warn a { color: #B2FF59; font-weight: bold; }
+    #warn a { color: #8FD0FF; font-weight: bold; }
   </style>
 </head>
 <body>
-  <div id="wrap"><iframe id="app" title="길드전 오더판"></iframe></div>
+  <div id="wrap"><iframe id="app" title="길드전 계산기"></iframe></div>
 
   <div id="warn">
     화면이 안 뜨나요? 브라우저가 이 방식을 막고 있을 수 있습니다.<br>
-    <a id="direct" href="#" target="_blank">👉 원래 주소로 열기</a>
+    <a id="direct" href="#" target="_blank">원래 주소로 열기</a>
   </div>
 
   <script>
