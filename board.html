@@ -245,7 +245,8 @@
           <div id="wishList" class="chips"><div class="loading">계산 중…</div></div>
           <div id="wishDetail" class="wish-detail"></div>
           <p class="note">길드원별 추천 1~5순위 꽃을 모은 목록입니다.
-            UR·UR+ 는 어차피 눈에 띄니 뺐습니다. 원하는 사람이 많은 순으로 놓여 있고,
+            UR·UR+ 는 어차피 눈에 띄니 뺐지만, <b>UR 이상을 4개 이하로 가진 분들의 UR·UR+ 는 앞쪽에 따로 넣었습니다</b>
+            — 그분들은 그 꽃이 떠야만 상위 등급을 할 수 있어서요.<br>
             누르면 몇 명이 필요한지 보여 줍니다.</p>
         </div>
       </div>
@@ -279,7 +280,8 @@
       var GCLASS = { 'UR+':'g-ur-plus', 'UR':'g-ur', 'SSR':'g-ssr', 'SR+':'g-sr-plus', 'SR':'g-sr' };
       var STALE_MS = 2 * 60 * 60 * 1000;
       var WISH_TOP = 5;                    // 길드원마다 몇 순위까지 모을지
-      var WISH_SKIP = { 'UR':1, 'UR+':1 }; // 이 등급은 목록에서 뺀다
+      var WISH_SKIP = { 'UR':1, 'UR+':1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
+      var UR_POOR_MAX = 4;                 // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
 
       var snap = null, board = {}, counts = {};
       var stats = {}, flowerIdx = {}, wish = [];
@@ -406,11 +408,30 @@
             if (!wishMap[f.name]) wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
             wishMap[f.name].who.push(name);
           });
+
+          /*
+           * 예외 — UR 이상을 몇 개 안 가진 사람의 UR·UR+ 는 도로 넣는다.
+           * UR 을 열몇 개 가진 사람은 UR 임무가 알아서 자주 걸리지만,
+           * 한두 개뿐인 사람은 그 한두 개가 떠야만 상위 등급을 할 수 있다.
+           * 그래서 이 꽃들은 놓치면 안 된다.
+           * 여기 붙는 이름은 '조건에 걸리는 사람' 뿐이다 — 다른 해금자는 넣지 않는다.
+           */
+          var urCount = (per['UR'] || 0) + (per['UR+'] || 0);
+          if (urCount > 0 && urCount <= UR_POOR_MAX) {
+            snap.flowers.forEach(function (f, i) {
+              if (bits.charAt(i) !== '1' || !WISH_SKIP[f.grade]) return;
+              if (!wishMap[f.name]) wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
+              wishMap[f.name].ur = true;
+              if (wishMap[f.name].who.indexOf(name) < 0) wishMap[f.name].who.push(name);
+            });
+          }
         });
 
         wish = Object.keys(wishMap).map(function (k) { return wishMap[k]; });
+        // UR 예외 건을 맨 앞에 — 56~60점짜리라 놓치면 손해가 제일 크다
         wish.sort(function (a, b) {
-          return b.who.length - a.who.length ||
+          return (b.ur ? 1 : 0) - (a.ur ? 1 : 0) ||
+                 b.who.length - a.who.length ||
                  ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) ||
                  a.name.localeCompare(b.name);
         });
@@ -720,6 +741,10 @@
               '<span class="gtag ' + (GCLASS[w.grade] || 'g-none') + '">' + esc(w.grade) + '</span>' +
               '<div class="need">' + w.who.length + '명이 필요로 합니다</div>' +
               '<div class="who">' + esc(w.who.join(', ')) + '</div>' +
+              (w.ur
+                ? '<div class="who"><b>UR 이상을 ' + UR_POOR_MAX + '개 이하로 가진 분들입니다.</b> ' +
+                  '이 꽃이 떠야 상위 등급을 할 수 있어요.</div>'
+                : '') +
               (onBoard.length
                 ? '<div class="who">이미 보드에 있음 · ' + esc(onBoard.join(', ')) + '</div>'
                 : '') +
