@@ -92,6 +92,7 @@
       .cand .who { flex: 1; min-width: 0; }
       .cand .who b { font-size: 14.5px; }
       .cand .meta { color: #78838f; font-size: 12px; margin-top: 2px; }
+      .cand .warn { color: #c62828; font-size: 12px; font-weight: bold; margin-top: 2px; }
       .cand .num { text-align: right; font-size: 13px; white-space: nowrap; }
       .cand .num .pt { font-weight: bold; color: #152c57; }
       .cand .num .sc { color: #78838f; font-size: 11.5px; }
@@ -614,20 +615,23 @@
             '<button class="btn sm' + (sortBy === 'up'     ? ' on' : '') + '" onclick="setSort(\'up\')">개량 순</button>' +
           '</div>';
 
+        var gi = ORDER.indexOf(g);
         html += list.map(function (c, i) {
           var st = c.st;
           var done = st.remain === 0;
           var scar = st.scarcity === null ? '—' : Math.round(st.scarcity);
           var isTight = !done && st.scarcity !== null && top > 0 && st.scarcity >= top * 0.7;
+          // 이 사람 상한이 임무 등급보다 높으면 그 한 칸이 아깝다는 뜻
+          var over = st.bestIdx >= 0 && st.bestIdx < gi;
           return '<div class="cand' + (done ? ' dim' : '') + '"' +
                    (done ? '' : ' onclick="assignAt(' + i + ')"') + '>' +
                    '<div class="who">' +
                      '<b>' + esc(c.name) + '</b>' +
                      '<div class="meta">' + st.used + '/' + MAX_COUNT +
                        ' · 최고 ' + (st.best || '없음') +
-                       ' · 해금 ' + st.unlocked + '개' +
                        (c.up ? ' · 개량 +' + c.up : '') +
                      '</div>' +
+                     (over ? '<div class="warn">! 최대 가능 등급보다 낮음</div>' : '') +
                    '</div>' +
                    '<div class="num">' +
                      '<div class="pt">' + c.score + '점</div>' +
