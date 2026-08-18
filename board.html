@@ -92,7 +92,7 @@
       .cand .who { flex: 1; min-width: 0; }
       .cand .who b { font-size: 14.5px; }
       .cand .meta { color: #78838f; font-size: 12px; margin-top: 2px; }
-      .cand .warn { color: #c62828; font-size: 12px; font-weight: bold; margin-top: 2px; }
+      .cand .warn { color: #c62828; font-weight: bold; white-space: nowrap; }
       .cand .num { text-align: right; font-size: 13px; white-space: nowrap; }
       .cand .num .pt { font-weight: bold; color: #152c57; }
       .cand .num .sc { color: #78838f; font-size: 11.5px; }
@@ -629,9 +629,9 @@
                      '<b>' + esc(c.name) + '</b>' +
                      '<div class="meta">' + st.used + '/' + MAX_COUNT +
                        ' · 최고 ' + (st.best || '없음') +
+                       (over ? ' <span class="warn">! 최대 가능 등급보다 낮음</span>' : '') +
                        (c.up ? ' · 개량 +' + c.up : '') +
                      '</div>' +
-                     (over ? '<div class="warn">! 최대 가능 등급보다 낮음</div>' : '') +
                    '</div>' +
                    '<div class="num">' +
                      '<div class="pt">' + c.score + '점</div>' +
