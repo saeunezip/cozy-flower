@@ -16,14 +16,15 @@
 
       .header-area {
         display: flex; justify-content: space-between; align-items: center;
-        gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+        gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
       }
       .title { color: #152c57; margin: 0; font-size: 21px; }
       .nav-btn {
         background: #1f3b73; color: #fff; text-decoration: none;
         padding: 9px 13px; border-radius: 9px; font-weight: bold;
-        font-size: 14px; border: none; cursor: pointer;
+        font-size: 14px; border: none; cursor: pointer; font-family: inherit;
       }
+      .nav-btn.ghost { background: #e8ebf2; color: #1f3b73; }
       .nav-btn:hover { filter: brightness(0.92); }
 
       .panel {
@@ -45,10 +46,17 @@
         cursor: pointer; font-family: inherit; white-space: nowrap;
       }
       .btn:hover { filter: brightness(0.92); }
-      .btn:disabled { opacity: 0.5; cursor: default; }
-      .btn.ghost { background: #e8ebf2; color: #1f3b73; }
       .btn.sm { padding: 6px 10px; font-size: 13px; background: #e8ebf2; color: #1f3b73; }
       .btn.sm.on { background: #1f3b73; color: #fff; }
+
+      .myct {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        min-width: 68px; padding: 5px 8px; border: 1px solid #dfe3ea;
+        border-radius: 9px; background: #f8f9fc; cursor: pointer;
+      }
+      .myct b { font-size: 16px; color: #152c57; line-height: 1.1; }
+      .myct span { font-size: 10.5px; color: #8b95a1; margin-top: 1px; }
+      .myct.full b { color: #b45309; }
 
       .note { color: #78838f; font-size: 12.5px; line-height: 1.55; margin: 8px 0 0; }
       .msg { padding: 10px 12px; border-radius: 9px; margin-bottom: 10px; font-size: 14px; }
@@ -69,7 +77,7 @@
         display: flex; align-items: center; gap: 9px;
         padding-bottom: 10px; border-bottom: 1px solid #eceef2; margin-bottom: 4px;
       }
-      .task-head img { width: 38px; height: 38px; border-radius: 8px; background: #eee; }
+      .task-head img { width: 40px; height: 40px; border-radius: 8px; background: #eee; }
       .task-head .nm { font-weight: bold; font-size: 15px; }
       .task-head .sub { color: #78838f; font-size: 12.5px; margin-top: 2px; }
 
@@ -92,20 +100,47 @@
       .sortbar { display: flex; gap: 6px; margin: 10px 0 4px; }
       .sortbar .btn.sm { flex: 1; }
 
-      /* 보드 현황 격자 */
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
-      .slot {
-        border: 1px solid #e3e6ec; border-radius: 9px; padding: 6px 7px;
-        font-size: 12px; line-height: 1.35; background: #fff; min-height: 62px;
+      /* 아코디언 */
+      .acc-head {
+        display: flex; align-items: center; gap: 8px; cursor: pointer;
+        margin: 0; font-size: 16px; color: #152c57; font-weight: bold;
       }
-      .slot.empty { background: #fafbfc; color: #b7bdc7; }
-      .slot.taken { cursor: pointer; }
-      .slot.mine { border-color: #1f3b73; background: #eef2fb; }
-      .slot.stale { opacity: 0.5; }
-      .slot .no { font-weight: bold; color: #152c57; }
-      .slot .fl { display: block; margin-top: 2px; word-break: keep-all; }
-      .slot .mb { display: block; margin-top: 2px; color: #1f3b73; font-weight: bold; }
-      .slot .ag { display: block; color: #9aa3af; font-size: 11px; }
+      .acc-head .cnt-badge {
+        background: #e8ebf2; color: #1f3b73; border-radius: 20px;
+        padding: 1px 9px; font-size: 12px;
+      }
+      .acc-head .arrow { margin-left: auto; color: #8b95a1; font-size: 13px; }
+      .acc-body { display: none; margin-top: 10px; }
+      .acc-body.open { display: block; }
+
+      .wish {
+        display: flex; align-items: center; gap: 9px;
+        padding: 8px 6px; border-bottom: 1px solid #f1f2f5;
+        cursor: pointer; border-radius: 8px;
+      }
+      .wish:hover { background: #f5f7fb; }
+      .wish img { width: 34px; height: 34px; border-radius: 7px; background: #eee; flex: none; }
+      .wish .w1 { flex: 1; min-width: 0; }
+      .wish .w1 b { font-size: 14px; }
+      .wish .w2 { color: #78838f; font-size: 11.5px; margin-top: 2px; word-break: keep-all; }
+      .wish .cn { font-size: 12.5px; color: #1f3b73; font-weight: bold; white-space: nowrap; }
+
+      /* 보드 현황 */
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 7px; }
+      .slot {
+        border: 1px solid #e3e6ec; border-radius: 10px; padding: 6px;
+        font-size: 11.5px; line-height: 1.3; background: #fff;
+        text-align: center; cursor: pointer;
+      }
+      .slot.mine { border-color: #1f3b73; border-width: 2px; background: #eef2fb; }
+      .slot.stale { opacity: 0.45; }
+      .slot .top { display: flex; align-items: center; justify-content: space-between; gap: 3px; }
+      .slot .no { font-weight: bold; color: #152c57; font-size: 12.5px; }
+      .slot img { width: 46px; height: 46px; border-radius: 8px; background: #f0f0f0; margin: 3px 0; }
+      .slot .fl { display: none; margin: 4px 0; word-break: keep-all; color: #55606c; }
+      .slot .mb { display: block; color: #1f3b73; font-weight: bold; word-break: keep-all; }
+      .slot .ag { display: block; color: #9aa3af; font-size: 10.5px; }
+      .empty-note { color: #9aa3af; font-size: 13px; padding: 6px 0; }
 
       /* 임무 횟수 */
       .cnt { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid #f1f2f5; }
@@ -126,7 +161,10 @@
     <div class="container">
       <div class="header-area">
         <h2 class="title">임무 보드</h2>
-        <a href="app.html" class="nav-btn">메인으로</a>
+        <div style="display:flex; gap:8px;">
+          <button class="nav-btn ghost" onclick="reload(true)">다시 읽기</button>
+          <a href="app.html" class="nav-btn">메인으로</a>
+        </div>
       </div>
 
       <div id="msg"></div>
@@ -136,7 +174,9 @@
           <select id="me" style="flex:1;" onchange="setMe()">
             <option value="">내 이름 고르기</option>
           </select>
-          <button class="btn ghost" onclick="reload(true)">새로고침</button>
+          <div class="myct" id="myCount" onclick="gotoCounts()">
+            <b>—</b><span>내 횟수</span>
+          </div>
         </div>
         <p class="note" id="snapNote">불러오는 중…</p>
       </div>
@@ -157,10 +197,24 @@
       </div>
 
       <div class="panel">
+        <h3 class="acc-head" onclick="toggleWish()">
+          발견하면 등록해 주세요
+          <span class="cnt-badge" id="wishCount">…</span>
+          <span class="arrow" id="wishArrow">▾</span>
+        </h3>
+        <div class="acc-body" id="wishBody">
+          <div id="wishList"><div class="loading">계산 중…</div></div>
+          <p class="note">길드원별 추천 1~5순위 꽃을 모은 목록입니다.
+            UR·UR+ 는 어차피 눈에 띄니 뺐습니다. 눌러서 바로 등록할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div class="panel">
         <h3>보드 현황</h3>
         <div id="grid" class="grid"></div>
-        <p class="note">칸을 누르면 비울 수 있습니다.
-          새로고침은 길드 공용이라 남이 갈아버릴 수 있습니다 — <b>오래된 칸은 흐리게</b> 표시하니 그대로 믿지 마세요.</p>
+        <div id="gridMore"></div>
+        <p class="note">최근 등록한 것부터 보여 줍니다. 칸을 누르면 비울 수 있습니다.<br>
+          게임 내 새로고침은 길드 공용이라 남이 갈아버릴 수 있습니다 — <b>2시간 지난 칸은 흐리게</b> 표시하니 그대로 믿지 마세요.</p>
       </div>
 
       <div class="panel">
@@ -175,19 +229,23 @@
       var API = 'https://guild-flower-worker.saeunezip.workers.dev';
       var IMG = 'https://saeunezip.github.io/cozy-flower/';
       var MAX_COUNT = 24;
+      var SHOW_SLOTS = 30;                 // 보드 현황에 한 번에 보여 줄 칸 수
 
-      var BASE   = { 'UR+':30, 'UR':28, 'SSR':25, 'SR+':23, 'SR':21 };
+      var BASE   = { 'UR+':30, 'UR':28, 'SSR':25, 'SR+':23, 'SR':21 };   // 임무 기본 점수
+      var SHEET  = { 'UR+':60, 'UR':56, 'SSR':50, 'SR+':46, 'SR':42 };   // 시트의 꽃 점수 (추천 순위용)
       var APPEAR = { 'UR+':0.0102, 'UR':0.0435, 'SSR':0.0511, 'SR+':0.0512, 'SR':0.0413 };
-      var ORDER  = ['UR+', 'UR', 'SSR', 'SR+', 'SR'];
+      var ORDER  = ['UR+', 'UR', 'SSR', 'SR+', 'SR'];                    // 앞이 높은 등급
       var GCLASS = { 'UR+':'g-ur-plus', 'UR':'g-ur', 'SSR':'g-ssr', 'SR+':'g-sr-plus', 'SR':'g-sr' };
-      var STALE_MS = 2 * 60 * 60 * 1000;   // 이보다 오래된 칸은 흐리게
+      var STALE_MS = 2 * 60 * 60 * 1000;
+      var WISH_TOP = 5;                    // 길드원마다 몇 순위까지 모을지
+      var WISH_SKIP = { 'UR':1, 'UR+':1 }; // 이 등급은 목록에서 뺀다
 
       var snap = null, board = {}, counts = {};
-      var stats = {};        // 길드원별 계산값
-      var flowerIdx = {};    // 꽃 이름 -> 번호
+      var stats = {}, flowerIdx = {}, wish = [];
       var me = '', pw = '';
       var sortBy = 'scarce';
-      var current = null;    // 지금 보고 있는 후보
+      var current = null;
+      var showAllCand = false, showAllSlots = false, wishOpen = false;
 
       try { me = localStorage.getItem('boardMe') || ''; } catch (e) {}
       try { pw = localStorage.getItem('boardPw') || ''; } catch (e) {}
@@ -197,7 +255,7 @@
           return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
         });
       }
-      function attr(s) { return esc(s).replace(/\\/g, '&#92;'); }
+      function imgUrl(name) { return IMG + encodeURIComponent(name) + '.png'; }
 
       var msgTimer = null;
       function say(text, isErr) {
@@ -205,9 +263,7 @@
           '<div class="msg ' + (isErr ? 'err' : 'ok') + '">' + esc(text) + '</div>';
         if (isErr) window.scrollTo({ top: 0, behavior: 'smooth' });
         clearTimeout(msgTimer);
-        msgTimer = setTimeout(function () {
-          document.getElementById('msg').innerHTML = '';
-        }, 6000);
+        msgTimer = setTimeout(function () { document.getElementById('msg').innerHTML = ''; }, 6000);
       }
       function ago(iso) {
         var m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -243,7 +299,7 @@
             }
             prepare();
             renderAll();
-            if (loud) say('최신 상태로 새로고침했습니다.');
+            if (loud) say('최신 상태로 다시 읽었습니다.');
           })
           .catch(function (e) { say('불러오지 못했습니다: ' + e.message, true); });
       }
@@ -251,15 +307,23 @@
       /* ---------- 계산 ---------- */
       function prepare() {
         flowerIdx = {};
-        var gradeTotal = {};
+        var gradeTotal = {}, holders = [];
         snap.flowers.forEach(function (f, i) {
           flowerIdx[f.name] = i;
           gradeTotal[f.grade] = (gradeTotal[f.grade] || 0) + 1;
         });
+        snap.flowers.forEach(function (f, i) {
+          var n = 0;
+          snap.members.forEach(function (m) { if ((snap.unlocked[m] || '').charAt(i) === '1') n++; });
+          holders[i] = n;
+        });
 
         stats = {};
+        var wishMap = {};
+
         snap.members.forEach(function (name) {
           var bits = snap.unlocked[name] || '';
+          var ups = snap.upgrades[name] || {};
           var per = {}, total = 0;
           snap.flowers.forEach(function (f, i) {
             if (bits.charAt(i) === '1') { per[f.grade] = (per[f.grade] || 0) + 1; total++; }
@@ -273,28 +337,51 @@
           });
 
           var best = '';
-          for (var i = 0; i < ORDER.length; i++) {
-            if (per[ORDER[i]]) { best = ORDER[i]; break; }
-          }
+          for (var i = 0; i < ORDER.length; i++) { if (per[ORDER[i]]) { best = ORDER[i]; break; } }
 
           var used = counts[name] || 0;
           var remain = Math.max(MAX_COUNT - used, 0);
           stats[name] = {
-            unlocked: total, p: p, best: best, used: used, remain: remain,
-            // 희소도 = 남은 횟수 ÷ 기회 확률. 채우려면 임무가 앞으로 몇 번 떠야 하는가.
-            // 해금이 하나도 없으면 p가 0이라 나눌 수 없다 -> null
+            unlocked: total, p: p, best: best, bestIdx: ORDER.indexOf(best),
+            used: used, remain: remain,
+            // 희소도 = 남은 횟수 ÷ 기회 확률. 해금이 없으면 p=0 이라 낼 수 없다 -> null
             scarcity: p > 0 ? remain / p : null
           };
+
+          // 이 사람에게 추천되는 꽃 상위 몇 개 (시트의 점수 공식과 같은 얼개)
+          var mine = [];
+          snap.flowers.forEach(function (f, i) {
+            if (bits.charAt(i) !== '1') return;
+            var up = ups[f.name] || 0;
+            mine.push({
+              i: i,
+              v: (SHEET[f.grade] + up) * 10000 - holders[i] * 100 - (per[f.grade] || 0)
+            });
+          });
+          mine.sort(function (a, b) { return b.v - a.v; });
+          mine.slice(0, WISH_TOP).forEach(function (x) {
+            var f = snap.flowers[x.i];
+            if (WISH_SKIP[f.grade]) return;                 // UR·UR+ 는 뺀다
+            if (!wishMap[f.name]) wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
+            wishMap[f.name].who.push(name);
+          });
+        });
+
+        wish = Object.keys(wishMap).map(function (k) { return wishMap[k]; });
+        wish.sort(function (a, b) {
+          return b.who.length - a.who.length ||
+                 ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) ||
+                 a.name.localeCompare(b.name);
         });
 
         document.getElementById('flowerList').innerHTML = snap.flowers.map(function (f) {
-          return '<option value="' + attr(f.name) + '">' + esc(f.grade) + '</option>';
+          return '<option value="' + esc(f.name) + '">' + esc(f.grade) + '</option>';
         }).join('');
 
         document.getElementById('me').innerHTML =
           '<option value="">내 이름 고르기</option>' +
           snap.members.map(function (n) {
-            return '<option value="' + attr(n) + '"' + (n === me ? ' selected' : '') + '>' + esc(n) + '</option>';
+            return '<option value="' + esc(n) + '"' + (n === me ? ' selected' : '') + '>' + esc(n) + '</option>';
           }).join('');
 
         document.getElementById('snapNote').textContent =
@@ -306,6 +393,18 @@
         me = document.getElementById('me').value;
         try { localStorage.setItem('boardMe', me); } catch (e) {}
         renderAll();
+      }
+
+      function gotoCounts() {
+        document.getElementById('counts').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      function renderMyCount() {
+        var box = document.getElementById('myCount');
+        var st = me && stats[me];
+        if (!st) { box.className = 'myct'; box.innerHTML = '<b>—</b><span>내 횟수</span>'; return; }
+        box.className = 'myct' + (st.used >= MAX_COUNT ? ' full' : '');
+        box.innerHTML = '<b>' + st.used + '/' + MAX_COUNT + '</b><span>내 횟수</span>';
       }
 
       /* ---------- 등록 -> 후보 ---------- */
@@ -321,55 +420,77 @@
           say("'" + name + "' 은 목록에 없습니다. 21점 미만 임무이거나 이름이 다릅니다.", true);
           return;
         }
-
         current = { no: no, flower: name, grade: snap.flowers[idx].grade, idx: idx };
+        showAllCand = false;
         renderCandidates();
       }
 
+      /*
+       * 후보 추리기 — 상한이 이 임무보다 두 단계 이상 높은 사람은 뺀다.
+       * 그 사람의 한 칸은 위 등급에 쓰는 게 낫다 (SR 42점 vs UR+ 60점, 차이 18점).
+       *
+       * 그래서 후보가 0명이 되는 일이 흔하다 — SR 꽃은 거의 전부, SR+ 는 열에 아홉.
+       * 낮은 등급 꽃을 가진 사람은 대개 꽃을 많이 모은 사람이라 상한도 높기 때문이다.
+       * 그건 문제가 아니라 답이다: 그 임무는 새로고침하는 게 맞다.
+       * 새로고침 2다이아로 +18점을 노리는 게, 상위 등급자의 한 칸을 태우는 것보다 싸다.
+       */
       function candidates() {
-        var list = [];
-        snap.members.forEach(function (name) {
-          var bits = snap.unlocked[name] || '';
-          if (bits.charAt(current.idx) !== '1') return;   // 해금 안 했으면 아예 못 함
+        var gi = ORDER.indexOf(current.grade);
+        var holders = snap.members.filter(function (name) {
+          return (snap.unlocked[name] || '').charAt(current.idx) === '1';
+        });
+
+        var pick = showAllCand ? holders : holders.filter(function (n) {
+          var b = stats[n].bestIdx;
+          return b < 0 || b >= gi - 1;
+        });
+
+        var list = pick.map(function (name) {
           var up = (snap.upgrades[name] || {})[current.flower] || 0;
-          list.push({
-            name: name, up: up,
-            score: BASE[current.grade] * 2 + up,          // 개량에는 2배가 안 붙는다
-            st: stats[name]
-          });
+          return { name: name, up: up, score: BASE[current.grade] * 2 + up, st: stats[name] };
         });
 
         list.sort(function (a, b) {
-          // 횟수를 다 쓴 사람은 무조건 아래로
           if ((a.st.remain === 0) !== (b.st.remain === 0)) return a.st.remain === 0 ? 1 : -1;
           if (sortBy === 'up')     return (b.up - a.up) || ((b.st.scarcity || 0) - (a.st.scarcity || 0));
           if (sortBy === 'remain') return (b.st.remain - a.st.remain) || (b.up - a.up);
           return ((b.st.scarcity || 0) - (a.st.scarcity || 0)) || (b.up - a.up);
         });
-        return list;
+        return { list: list, hidden: holders.length - pick.length, total: holders.length };
       }
 
       function renderCandidates() {
         if (!current) return;
-        var list = candidates();
-        var g = current.grade;
+        var r = candidates();
+        var list = r.list, g = current.grade, total = r.total;
         var top = list.length ? (list[0].st.scarcity || 0) : 0;
 
         var html =
           '<div class="task-head">' +
-            '<img src="' + IMG + encodeURIComponent(current.flower) + '.png" alt="" ' +
+            '<img src="' + imgUrl(current.flower) + '" alt="" ' +
                  'onerror="this.style.visibility=&quot;hidden&quot;">' +
             '<div style="flex:1;min-width:0;">' +
               '<div class="nm">' + current.no + '번 · ' + esc(current.flower) +
                 ' <span class="gtag ' + (GCLASS[g] || 'g-none') + '">' + esc(g) + '</span></div>' +
-              '<div class="sub">기본 ' + (BASE[g] * 2) + '점 (업그레이드 기준) · 해금 ' + list.length + '명</div>' +
+              '<div class="sub">기본 ' + (BASE[g] * 2) + '점 (업그레이드 기준) · 해금 ' + total + '명</div>' +
             '</div>' +
           '</div>';
 
+        if (!total) {
+          html += '<div class="msg err" style="margin-top:10px;">' +
+                  '해금한 사람이 아무도 없습니다. <b>새로고침 하세요.</b></div>';
+          document.getElementById('candBox').innerHTML = html;
+          return;
+        }
+
         if (!list.length) {
           html += '<div class="msg err" style="margin-top:10px;">' +
-                  '해금한 사람이 아무도 없습니다. <b>새로고침 대상</b>입니다.</div>';
+                  '할 수 있는 ' + total + '명이 전부 <b>더 높은 등급도 가능한 사람</b>입니다. ' +
+                  '<b>새로고침 하세요.</b>' +
+                  '<div style="margin-top:8px;"><button class="btn sm" onclick="toggleAllCand()">' +
+                  '그래도 보기</button></div></div>';
           document.getElementById('candBox').innerHTML = html;
+          renderCandidates.list = [];
           return;
         }
 
@@ -402,15 +523,25 @@
                  '</div>';
         }).join('');
 
+        if (r.hidden) {
+          html += '<div style="margin-top:8px;">' +
+                  '<button class="btn sm" onclick="toggleAllCand()">' +
+                  '상위 등급자 ' + r.hidden + '명 숨김 · 모두 보기</button></div>';
+        } else if (showAllCand) {
+          html += '<div style="margin-top:8px;">' +
+                  '<button class="btn sm on" onclick="toggleAllCand()">등급 맞는 사람만 보기</button></div>';
+        }
+
         html += '<p class="note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. ' +
-                '높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.</p>';
+                '높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>' +
+                '이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다.</p>';
 
         document.getElementById('candBox').innerHTML = html;
         renderCandidates.list = list;
       }
 
       function setSort(v) { sortBy = v; renderCandidates(); }
-
+      function toggleAllCand() { showAllCand = !showAllCand; renderCandidates(); }
       function assignAt(i) {
         var c = renderCandidates.list && renderCandidates.list[i];
         if (c) assign(c.name);
@@ -450,28 +581,86 @@
         return true;
       }
 
+      /* ---------- 발견하면 등록해 주세요 ---------- */
+      function toggleWish() {
+        wishOpen = !wishOpen;
+        document.getElementById('wishBody').className = 'acc-body' + (wishOpen ? ' open' : '');
+        document.getElementById('wishArrow').textContent = wishOpen ? '▴' : '▾';
+      }
+
+      function renderWish() {
+        document.getElementById('wishCount').textContent = wish.length + '개';
+        if (!wish.length) {
+          document.getElementById('wishList').innerHTML =
+            '<div class="empty-note">해당하는 꽃이 없습니다.</div>';
+          return;
+        }
+        document.getElementById('wishList').innerHTML = wish.map(function (w, i) {
+          return '<div class="wish" onclick="pickWish(' + i + ')">' +
+                   '<img src="' + imgUrl(w.name) + '" alt="" ' +
+                        'onerror="this.style.visibility=&quot;hidden&quot;">' +
+                   '<div class="w1">' +
+                     '<b>' + esc(w.name) + '</b> ' +
+                     '<span class="gtag ' + (GCLASS[w.grade] || 'g-none') + '">' + esc(w.grade) + '</span>' +
+                     '<div class="w2">' + esc(w.who.join(', ')) + '</div>' +
+                   '</div>' +
+                   '<div class="cn">' + w.who.length + '명</div>' +
+                 '</div>';
+        }).join('');
+      }
+
+      function pickWish(i) {
+        var w = wish[i];
+        if (!w) return;
+        document.getElementById('flowerName').value = w.name;
+        document.getElementById('slotNo').focus();
+        document.getElementById('slotNo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
       /* ---------- 보드 현황 ---------- */
+      function slotList() {
+        return Object.keys(board).map(function (k) { return board[k]; })
+          .sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+      }
+
       function renderGrid() {
-        var html = '';
-        for (var n = 1; n <= 66; n++) {
-          var s = board[String(n)];
-          if (!s) {
-            html += '<div class="slot empty"><span class="no">' + n + '</span></div>';
-            continue;
-          }
+        var all = slotList();
+        var shown = showAllSlots ? all : all.slice(0, SHOW_SLOTS);
+
+        if (!all.length) {
+          document.getElementById('grid').innerHTML =
+            '<div class="empty-note" style="grid-column:1/-1;">아직 등록한 임무가 없습니다.</div>';
+          document.getElementById('gridMore').innerHTML = '';
+          return;
+        }
+
+        document.getElementById('grid').innerHTML = shown.map(function (s) {
           var stale = Date.now() - new Date(s.at).getTime() > STALE_MS;
           var mine = me && s.member === me;
-          html += '<div class="slot taken' + (mine ? ' mine' : '') + (stale ? ' stale' : '') + '" ' +
-                       'onclick="clearSlot(' + n + ')">' +
-                    '<span class="no">' + n + '</span> ' +
-                    '<span class="gtag ' + (GCLASS[s.grade] || 'g-none') + '">' + esc(s.grade || '?') + '</span>' +
-                    '<span class="fl">' + esc(s.flower) + '</span>' +
-                    (s.member ? '<span class="mb">' + esc(s.member) + '</span>' : '') +
-                    '<span class="ag">' + ago(s.at) + '</span>' +
-                  '</div>';
-        }
-        document.getElementById('grid').innerHTML = html;
+          return '<div class="slot' + (mine ? ' mine' : '') + (stale ? ' stale' : '') + '" ' +
+                      'title="' + esc(s.flower) + '" onclick="clearSlot(' + s.no + ')">' +
+                   '<div class="top">' +
+                     '<span class="no">' + s.no + '</span>' +
+                     '<span class="gtag ' + (GCLASS[s.grade] || 'g-none') + '">' + esc(s.grade || '?') + '</span>' +
+                   '</div>' +
+                   '<img src="' + imgUrl(s.flower) + '" alt="' + esc(s.flower) + '" ' +
+                        'onerror="this.style.display=&quot;none&quot;;' +
+                                 'this.nextElementSibling.style.display=&quot;block&quot;">' +
+                   '<span class="fl">' + esc(s.flower) + '</span>' +
+                   (s.member ? '<span class="mb">' + esc(s.member) + '</span>' : '') +
+                   '<span class="ag">' + ago(s.at) + '</span>' +
+                 '</div>';
+        }).join('');
+
+        document.getElementById('gridMore').innerHTML =
+          all.length > SHOW_SLOTS
+            ? '<div style="margin-top:9px;"><button class="btn sm" onclick="toggleAllSlots()">' +
+              (showAllSlots ? '최근 ' + SHOW_SLOTS + '개만 보기' : '나머지 ' + (all.length - SHOW_SLOTS) + '개 더 보기') +
+              '</button></div>'
+            : '';
       }
+
+      function toggleAllSlots() { showAllSlots = !showAllSlots; renderGrid(); }
 
       function clearSlot(no) {
         var s = board[String(no)];
@@ -515,6 +704,7 @@
           stats[name].scarcity = stats[name].p > 0 ? stats[name].remain / stats[name].p : null;
         }
         renderCounts();
+        renderMyCount();
         if (current) renderCandidates();
 
         // 연타할 때 요청이 쏟아지지 않도록 잠깐 모았다 보낸다
@@ -530,6 +720,8 @@
 
       /* ---------- ---------- */
       function renderAll() {
+        renderMyCount();
+        renderWish();
         renderGrid();
         renderCounts();
         if (current) renderCandidates();
