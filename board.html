@@ -6,200 +6,579 @@
     <title>길드전 임무 보드 · 백야</title>
     <meta name="robots" content="noindex" />
     <style>
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         font-family: "Malgun Gothic", sans-serif;
-        margin: 0; padding: 14px 10px 60px;
-        background: #f7f7f8; color: #263238;
+        margin: 0;
+        padding: 14px 10px 60px;
+        background: #f7f7f8;
+        color: #263238;
       }
-      .container { max-width: 640px; margin: auto; }
+      .container {
+        max-width: 640px;
+        margin: auto;
+      }
 
       .header-area {
-        display: flex; justify-content: space-between; align-items: center;
-        gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
       }
-      .title { color: #152c57; margin: 0; font-size: 21px; }
+      .title {
+        color: #152c57;
+        margin: 0;
+        font-size: 21px;
+      }
       .nav-btn {
-        background: #1f3b73; color: #fff; text-decoration: none;
-        padding: 9px 13px; border-radius: 9px; font-weight: bold;
-        font-size: 14px; border: none; cursor: pointer; font-family: inherit;
+        background: #1f3b73;
+        color: #fff;
+        text-decoration: none;
+        padding: 9px 13px;
+        border-radius: 9px;
+        font-weight: bold;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
       }
-      .nav-btn.ghost { background: #e8ebf2; color: #1f3b73; }
-      .nav-btn:hover { filter: brightness(0.92); }
+      .nav-btn.ghost {
+        background: #e8ebf2;
+        color: #1f3b73;
+      }
+      .nav-btn:hover {
+        filter: brightness(0.92);
+      }
 
       .panel {
-        background: #fff; border-radius: 14px; padding: 14px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 12px;
+        background: #fff;
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        margin-bottom: 12px;
       }
-      .panel h3 { margin: 0 0 10px; font-size: 16px; color: #152c57; }
+      .panel h3 {
+        margin: 0 0 10px;
+        font-size: 16px;
+        color: #152c57;
+      }
 
-      .row { display: flex; gap: 8px; align-items: center; }
-      input, select {
-        font-family: inherit; font-size: 15px; padding: 9px 10px;
-        border: 1px solid #cfd4dc; border-radius: 9px; background: #fff;
-        color: #263238; min-width: 0;
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
       }
-      input:focus, select:focus { outline: 2px solid #90a4d4; outline-offset: -1px; }
+      input,
+      select {
+        font-family: inherit;
+        font-size: 15px;
+        padding: 9px 10px;
+        border: 1px solid #cfd4dc;
+        border-radius: 9px;
+        background: #fff;
+        color: #263238;
+        min-width: 0;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid #90a4d4;
+        outline-offset: -1px;
+      }
       .btn {
-        background: #1f3b73; color: #fff; border: none; border-radius: 9px;
-        padding: 10px 14px; font-size: 14px; font-weight: bold;
-        cursor: pointer; font-family: inherit; white-space: nowrap;
+        background: #1f3b73;
+        color: #fff;
+        border: none;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        font-family: inherit;
+        white-space: nowrap;
       }
-      .btn:hover { filter: brightness(0.92); }
-      .btn.sm { padding: 6px 10px; font-size: 13px; background: #e8ebf2; color: #1f3b73; }
-      .btn.sm.on { background: #1f3b73; color: #fff; }
+      .btn:hover {
+        filter: brightness(0.92);
+      }
+      .btn.sm {
+        padding: 6px 10px;
+        font-size: 13px;
+        background: #e8ebf2;
+        color: #1f3b73;
+      }
+      .btn.sm.on {
+        background: #1f3b73;
+        color: #fff;
+      }
 
       .myct {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        min-width: 68px; padding: 5px 8px; border: 1px solid #dfe3ea;
-        border-radius: 9px; background: #f8f9fc; cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 68px;
+        padding: 5px 8px;
+        border: 1px solid #dfe3ea;
+        border-radius: 9px;
+        background: #f8f9fc;
+        cursor: pointer;
       }
-      .myct b { font-size: 16px; color: #152c57; line-height: 1.1; }
-      .myct span { font-size: 10.5px; color: #8b95a1; margin-top: 1px; }
-      .myct.full b { color: #b45309; }
+      .myct b {
+        font-size: 16px;
+        color: #152c57;
+        line-height: 1.1;
+      }
+      .myct span {
+        font-size: 10.5px;
+        color: #8b95a1;
+        margin-top: 1px;
+      }
+      .myct.full b {
+        color: #b45309;
+      }
 
-      .note { color: #78838f; font-size: 12.5px; line-height: 1.55; margin: 8px 0 0; }
-      .msg { padding: 10px 12px; border-radius: 9px; margin-bottom: 10px; font-size: 14px; }
-      .msg.ok  { background: #e6f4ea; color: #1e5631; }
-      .msg.err { background: #fdecea; color: #8b1e1e; }
-      .loading { color: #78838f; font-size: 13px; padding: 10px 0; }
+      .note {
+        color: #78838f;
+        font-size: 12.5px;
+        line-height: 1.55;
+        margin: 8px 0 0;
+      }
+      .msg {
+        padding: 10px 12px;
+        border-radius: 9px;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      .msg.ok {
+        background: #e6f4ea;
+        color: #1e5631;
+      }
+      .msg.err {
+        background: #fdecea;
+        color: #8b1e1e;
+      }
+      .loading {
+        color: #78838f;
+        font-size: 13px;
+        padding: 10px 0;
+      }
 
       .gtag {
-        display: inline-block; padding: 1px 7px; border-radius: 6px;
-        font-size: 11.5px; font-weight: bold; color: #3d3d3d;
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: bold;
+        color: #3d3d3d;
       }
-      .g-ur-plus { background: #E6B8AF; } .g-ur { background: #F4CCCC; }
-      .g-ssr { background: #FFF2CC; } .g-sr-plus { background: #B4A7D6; }
-      .g-sr { background: #D9D2E9; } .g-none { background: #E0E0E0; }
+      .g-ur-plus {
+        background: #e6b8af;
+      }
+      .g-ur {
+        background: #f4cccc;
+      }
+      .g-ssr {
+        background: #fff2cc;
+      }
+      .g-sr-plus {
+        background: #b4a7d6;
+      }
+      .g-sr {
+        background: #d9d2e9;
+      }
+      .g-none {
+        background: #e0e0e0;
+      }
 
       /* 후보 목록 */
       .task-head {
-        display: flex; align-items: center; gap: 9px;
-        padding-bottom: 10px; border-bottom: 1px solid #eceef2; margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eceef2;
+        margin-bottom: 4px;
       }
-      .task-head img { width: 40px; height: 40px; border-radius: 8px; background: #eee; }
-      .task-head .nm { font-weight: bold; font-size: 15px; }
-      .task-head .sub { color: #78838f; font-size: 12.5px; margin-top: 2px; }
+      .task-head img {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #eee;
+      }
+      .task-head .nm {
+        font-weight: bold;
+        font-size: 15px;
+      }
+      .task-head .sub {
+        color: #78838f;
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
 
       .cand {
-        display: flex; align-items: center; gap: 8px;
-        padding: 9px 6px; border-bottom: 1px solid #f1f2f5;
-        cursor: pointer; border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 6px;
+        border-bottom: 1px solid #f1f2f5;
+        cursor: pointer;
+        border-radius: 8px;
       }
-      .cand:hover { background: #f5f7fb; }
-      .cand.dim { opacity: 0.45; cursor: default; }
-      .cand.dim:hover { background: none; }
-      .cand .who { flex: 1; min-width: 0; }
-      .cand .who b { font-size: 14.5px; }
-      .cand .meta { color: #78838f; font-size: 12px; margin-top: 2px; }
-      .cand .warn { color: #c62828; font-weight: bold; white-space: nowrap; }
-      .cand .num { text-align: right; font-size: 13px; white-space: nowrap; }
-      .cand .num .pt { font-weight: bold; color: #152c57; }
-      .cand .num .sc { color: #78838f; font-size: 11.5px; }
-      .tight { color: #b45309; font-weight: bold; }
+      .cand:hover {
+        background: #f5f7fb;
+      }
+      .cand.dim {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .cand.dim:hover {
+        background: none;
+      }
+      .cand .who {
+        flex: 1;
+        min-width: 0;
+      }
+      .cand .who b {
+        font-size: 14.5px;
+      }
+      .cand .meta {
+        color: #78838f;
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .cand .warn {
+        color: #c62828;
+        font-weight: bold;
+        white-space: nowrap;
+      }
+      .cand .num {
+        text-align: right;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .cand .num .pt {
+        font-weight: bold;
+        color: #152c57;
+      }
+      .cand .num .sc {
+        color: #78838f;
+        font-size: 11.5px;
+      }
+      .tight {
+        color: #b45309;
+        font-weight: bold;
+      }
 
-      .sortbar { display: flex; gap: 6px; margin: 10px 0 4px; }
-      .sortbar .btn.sm { flex: 1; }
+      .sortbar {
+        display: flex;
+        gap: 6px;
+        margin: 10px 0 4px;
+      }
+      .sortbar .btn.sm {
+        flex: 1;
+      }
 
       /* 아코디언 */
       .acc-head {
-        display: flex; align-items: center; gap: 8px; cursor: pointer;
-        margin: 0; font-size: 16px; color: #152c57; font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        margin: 0;
+        font-size: 16px;
+        color: #152c57;
+        font-weight: bold;
       }
       .acc-head .cnt-badge {
-        background: #e8ebf2; color: #1f3b73; border-radius: 20px;
-        padding: 1px 9px; font-size: 12px;
+        background: #e8ebf2;
+        color: #1f3b73;
+        border-radius: 20px;
+        padding: 1px 9px;
+        font-size: 12px;
       }
-      .acc-head .arrow { margin-left: auto; color: #8b95a1; font-size: 13px; }
-      .acc-body { display: none; margin-top: 10px; }
-      .acc-body.open { display: block; }
+      .acc-head .arrow {
+        margin-left: auto;
+        color: #8b95a1;
+        font-size: 13px;
+      }
+      .acc-body {
+        display: none;
+        margin-top: 10px;
+      }
+      .acc-body.open {
+        display: block;
+      }
 
       /* 아이콘만 놓는다 — 꽃 이름이 길어서 이름을 넣으면 한 줄에 두 개밖에 안 들어간다.
          이름과 필요 인원은 눌렀을 때 아래에 나온다. */
-      .chips { display: flex; flex-wrap: wrap; gap: 7px; }
-      .chip {
-        position: relative; width: 48px; height: 48px; padding: 0;
-        border: none; background: none; border-radius: 11px;
-        cursor: pointer; font-family: inherit; overflow: hidden;
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
       }
-      .chip:hover { filter: brightness(0.93); }
-      .chip.on { box-shadow: 0 0 0 2px #1f3b73 inset; }
-      .chip.on img { transform: scale(0.86); }
-      .chip img { width: 100%; height: 100%; border-radius: 11px; display: block; }
+      .chip {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border: none;
+        background: none;
+        border-radius: 11px;
+        cursor: pointer;
+        font-family: inherit;
+        overflow: hidden;
+      }
+      .chip:hover {
+        filter: brightness(0.93);
+      }
+      .chip.on {
+        box-shadow: 0 0 0 2px #1f3b73 inset;
+      }
+      .chip.on img {
+        transform: scale(0.86);
+      }
+      .chip img {
+        width: 100%;
+        height: 100%;
+        border-radius: 11px;
+        display: block;
+      }
       .chip .fb {
-        display: none; position: absolute; inset: 0; border-radius: 11px;
-        align-items: center; justify-content: center; text-align: center;
-        font-size: 10px; line-height: 1.15; color: #4a5560; padding: 3px;
-        background: #f0f1f4; word-break: keep-all; overflow: hidden;
+        display: none;
+        position: absolute;
+        inset: 0;
+        border-radius: 11px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 10px;
+        line-height: 1.15;
+        color: #4a5560;
+        padding: 3px;
+        background: #f0f1f4;
+        word-break: keep-all;
+        overflow: hidden;
       }
 
       /* 꽃 이름 자동완성 — 브라우저 기본 datalist 는 입력 전부터 197개를 펼쳐서
          모바일 키보드를 가린다. 그래서 두 글자부터 뜨도록 직접 만든다. */
-      .sug-wrap { position: relative; flex: 1; min-width: 0; }
+      .sug-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+      }
       .sug {
-        display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
-        margin-top: 4px; background: #fff; border: 1px solid #cfd4dc; border-radius: 10px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.14); max-height: 232px; overflow-y: auto;
+        display: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        z-index: 30;
+        margin-top: 4px;
+        background: #fff;
+        border: 1px solid #cfd4dc;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+        max-height: 232px;
+        overflow-y: auto;
       }
-      .sug.open { display: block; }
+      .sug.open {
+        display: block;
+      }
       .sug .s {
-        display: flex; align-items: center; gap: 8px;
-        padding: 8px 10px; font-size: 14px; cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        font-size: 14px;
+        cursor: pointer;
       }
-      .sug .s:hover, .sug .s.sel { background: #eef2fb; }
-      .sug .s img { width: 26px; height: 26px; border-radius: 7px; background: #f0f0f0; flex: none; }
-      .sug .s .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .sug .none { padding: 10px; font-size: 13px; color: #8b95a1; }
+      .sug .s:hover,
+      .sug .s.sel {
+        background: #eef2fb;
+      }
+      .sug .s img {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: #f0f0f0;
+        flex: none;
+      }
+      .sug .s .n {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sug .none {
+        padding: 10px;
+        font-size: 13px;
+        color: #8b95a1;
+      }
 
-      .wish-detail { margin-top: 12px; }
-      .wish-detail .wd {
-        background: #f6f8fc; border-radius: 10px; padding: 11px 12px;
-        display: flex; align-items: flex-start; gap: 10px;
+      .wish-detail {
+        margin-top: 12px;
       }
-      .wish-detail img { width: 40px; height: 40px; border-radius: 8px; background: #eee; flex: none; }
-      .wish-detail .t { flex: 1; min-width: 0; }
-      .wish-detail .t b { font-size: 14.5px; }
-      .wish-detail .need { color: #1f3b73; font-weight: bold; font-size: 13px; margin-top: 3px; }
-      .wish-detail .who { color: #78838f; font-size: 12px; margin-top: 3px; word-break: keep-all; line-height: 1.5; }
+      .wish-detail .wd {
+        background: #f6f8fc;
+        border-radius: 10px;
+        padding: 11px 12px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .wish-detail img {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #eee;
+        flex: none;
+      }
+      .wish-detail .t {
+        flex: 1;
+        min-width: 0;
+      }
+      .wish-detail .t b {
+        font-size: 14.5px;
+      }
+      .wish-detail .need {
+        color: #1f3b73;
+        font-weight: bold;
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .wish-detail .who {
+        color: #78838f;
+        font-size: 12px;
+        margin-top: 3px;
+        word-break: keep-all;
+        line-height: 1.5;
+      }
 
       /* 보드 현황 */
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 7px; }
-      .slot {
-        border: 1px solid #e3e6ec; border-radius: 10px; padding: 6px;
-        font-size: 11.5px; line-height: 1.3; background: #fff;
-        text-align: center; cursor: pointer;
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        gap: 7px;
       }
-      .slot.mine { border-color: #1f3b73; border-width: 2px; background: #eef2fb; }
-      .slot.stale { opacity: 0.45; }
-      .slot .top { display: flex; align-items: center; justify-content: space-between; gap: 3px; }
-      .slot .no { font-weight: bold; color: #152c57; font-size: 12.5px; }
-      .slot img { width: 46px; height: 46px; border-radius: 8px; background: #f0f0f0; margin: 3px 0; }
-      .slot .fl { display: none; margin: 4px 0; word-break: keep-all; color: #55606c; }
-      .slot .mb { display: block; color: #1f3b73; font-weight: bold; word-break: keep-all; }
-      .slot .ag { display: block; color: #9aa3af; font-size: 10.5px; }
-      .empty-note { color: #9aa3af; font-size: 13px; padding: 6px 0; }
+      .slot {
+        border: 1px solid #e3e6ec;
+        border-radius: 10px;
+        padding: 6px;
+        font-size: 11.5px;
+        line-height: 1.3;
+        background: #fff;
+        text-align: center;
+        cursor: pointer;
+      }
+      .slot.mine {
+        border-color: #1f3b73;
+        border-width: 2px;
+        background: #eef2fb;
+      }
+      .slot.stale {
+        opacity: 0.45;
+      }
+      .slot .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 3px;
+      }
+      .slot .no {
+        font-weight: bold;
+        color: #152c57;
+        font-size: 12.5px;
+      }
+      .slot img {
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+        background: #f0f0f0;
+        margin: 3px 0;
+      }
+      .slot .fl {
+        display: none;
+        margin: 4px 0;
+        word-break: keep-all;
+        color: #55606c;
+      }
+      .slot .mb {
+        display: block;
+        color: #1f3b73;
+        font-weight: bold;
+        word-break: keep-all;
+      }
+      .slot .ag {
+        display: block;
+        color: #9aa3af;
+        font-size: 10.5px;
+      }
+      .empty-note {
+        color: #9aa3af;
+        font-size: 13px;
+        padding: 6px 0;
+      }
 
       /* 임무 횟수 */
-      .cnt { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid #f1f2f5; }
-      .cnt .nm { flex: 1; font-size: 14px; }
-      .cnt .nm.me { font-weight: bold; color: #152c57; }
-      .cnt .val { width: 52px; text-align: center; font-size: 15px; font-weight: bold; }
-      .cnt .val.full { color: #b45309; }
-      .stepper { display: flex; gap: 5px; }
-      .stepper button {
-        width: 32px; height: 32px; border-radius: 8px; border: 1px solid #cfd4dc;
-        background: #fff; font-size: 17px; cursor: pointer; color: #1f3b73;
-        font-family: inherit; line-height: 1;
+      .cnt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 2px;
+        border-bottom: 1px solid #f1f2f5;
       }
-      .stepper button:disabled { opacity: 0.35; cursor: default; }
+      .cnt .nm {
+        flex: 1;
+        font-size: 14px;
+      }
+      .cnt .nm.me {
+        font-weight: bold;
+        color: #152c57;
+      }
+      .cnt .val {
+        width: 52px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: bold;
+      }
+      .cnt .val.full {
+        color: #b45309;
+      }
+      .stepper {
+        display: flex;
+        gap: 5px;
+      }
+      .stepper button {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid #cfd4dc;
+        background: #fff;
+        font-size: 17px;
+        cursor: pointer;
+        color: #1f3b73;
+        font-family: inherit;
+        line-height: 1;
+      }
+      .stepper button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header-area">
         <h2 class="title">임무 보드</h2>
-        <div style="display:flex; gap:8px;">
-          <button class="nav-btn ghost" onclick="reload(true)">보드 새로고침</button>
+        <div style="display: flex; gap: 8px">
+          <button class="nav-btn ghost" onclick="reload(true)">
+            보드 새로고침
+          </button>
           <a href="app.html" class="nav-btn">메인으로</a>
         </div>
       </div>
@@ -208,7 +587,7 @@
 
       <div class="panel">
         <div class="row">
-          <select id="me" style="flex:1;" onchange="setMe()">
+          <select id="me" style="flex: 1" onchange="setMe()">
             <option value="">내 이름 고르기</option>
           </select>
           <div class="myct" id="myCount" onclick="gotoCounts()">
@@ -221,19 +600,35 @@
       <div class="panel">
         <h3>임무 등록</h3>
         <div class="row">
-          <input type="number" id="slotNo" placeholder="번호" min="1" max="66"
-                 style="width:80px;" onkeydown="if(event.key==='Enter')lookup()" />
+          <input
+            type="number"
+            id="slotNo"
+            placeholder="번호"
+            min="1"
+            max="66"
+            style="width: 80px"
+            onkeydown="if (event.key === 'Enter') lookup();"
+          />
           <span class="sug-wrap">
-            <input type="text" id="flowerName" placeholder="꽃 이름" autocomplete="off"
-                   style="width:100%;" oninput="onFlowerInput()" onkeydown="flowerKey(event)"
-                   onblur="setTimeout(closeSug, 120)" />
+            <input
+              type="text"
+              id="flowerName"
+              placeholder="꽃 이름"
+              autocomplete="off"
+              style="width: 100%"
+              oninput="onFlowerInput()"
+              onkeydown="flowerKey(event)"
+              onblur="setTimeout(closeSug, 120)"
+            />
             <div id="flowerSug" class="sug"></div>
           </span>
           <button class="btn" onclick="lookup()">확인</button>
         </div>
         <div id="candBox"></div>
-        <p class="note">꽃 이름만 넣으면 등급·해금자·개량이 자동으로 붙습니다.
-          목록에 없는 이름이면 21점 미만 임무라 등록하지 않습니다.</p>
+        <p class="note">
+          꽃 이름만 넣으면 등급·해금자·개량이 자동으로 붙습니다. 목록에 없는
+          이름이면 21점 미만 임무라 등록하지 않습니다.
+        </p>
       </div>
 
       <div class="panel">
@@ -243,12 +638,15 @@
           <span class="arrow" id="wishArrow">▾</span>
         </h3>
         <div class="acc-body" id="wishBody">
-          <div id="wishList" class="chips"><div class="loading">계산 중…</div></div>
+          <div id="wishList" class="chips">
+            <div class="loading">계산 중…</div>
+          </div>
           <div id="wishDetail" class="wish-detail"></div>
-          <p class="note">길드원별 추천 1~5순위 꽃을 모은 목록입니다.
-            UR·UR+ 는 어차피 눈에 띄니 뺐지만, <b>UR 이상을 4개 이하로 가진 분들의 UR·UR+ 는 앞쪽에 따로 넣었습니다</b>
-            — 그분들은 그 꽃이 떠야만 상위 등급을 할 수 있어서요.<br>
-            누르면 몇 명이 필요한지 보여 줍니다.</p>
+          <p class="note">
+            길드원별 추천 1~5순위 꽃 중에서 임무 배분이 필요한 꽃을
+            모았습니다.<br />
+            누르면 몇 명이 필요한지 보여 줍니다.
+          </p>
         </div>
       </div>
 
@@ -256,109 +654,163 @@
         <h3>보드 현황</h3>
         <div id="grid" class="grid"></div>
         <div id="gridMore"></div>
-        <p class="note">최근 등록한 것부터 보여 줍니다. 칸을 누르면 비울 수 있습니다.<br>
-          게임 내 새로고침은 길드 공용이라 남이 갈아버릴 수 있습니다 — <b>2시간 지난 칸은 흐리게</b> 표시하니 그대로 믿지 마세요.</p>
+        <p class="note">
+          최근 등록한 것부터 보여 줍니다. 칸을 누르면 비울 수 있습니다.<br />
+          <b>2시간 지난 칸은 흐리게 표시됩니다. 인게임과 다를 수 있어요.</b>
+        </p>
       </div>
 
       <div class="panel">
         <h3>임무 횟수</h3>
         <div id="counts"><div class="loading">불러오는 중…</div></div>
-        <p class="note">각자 자기 숫자를 적어 주세요. 인게임에서 확인한 값을 그대로 넣으면 됩니다.<br>
-          이 숫자가 추천 순서를 정하는 데 쓰입니다.</p>
+        <p class="note">
+          각자 자기 숫자를 적어 주세요. 인게임에서 확인한 값을 그대로 넣으면
+          됩니다.
+        </p>
       </div>
     </div>
 
     <script>
-      var API = 'https://guild-flower-worker.saeunezip.workers.dev';
-      var IMG = 'https://saeunezip.github.io/cozy-flower/';
+      var API = "https://guild-flower-worker.saeunezip.workers.dev";
+      var IMG = "https://saeunezip.github.io/cozy-flower/";
       var MAX_COUNT = 24;
-      var SHOW_SLOTS = 30;                 // 보드 현황에 한 번에 보여 줄 칸 수
+      var SHOW_SLOTS = 30; // 보드 현황에 한 번에 보여 줄 칸 수
 
-      var BASE   = { 'UR+':30, 'UR':28, 'SSR':25, 'SR+':23, 'SR':21 };   // 임무 기본 점수
-      var SHEET  = { 'UR+':60, 'UR':56, 'SSR':50, 'SR+':46, 'SR':42 };   // 시트의 꽃 점수 (추천 순위용)
-      var APPEAR = { 'UR+':0.0102, 'UR':0.0435, 'SSR':0.0511, 'SR+':0.0512, 'SR':0.0413 };
-      var ORDER  = ['UR+', 'UR', 'SSR', 'SR+', 'SR'];                    // 앞이 높은 등급
-      var GCLASS = { 'UR+':'g-ur-plus', 'UR':'g-ur', 'SSR':'g-ssr', 'SR+':'g-sr-plus', 'SR':'g-sr' };
+      var BASE = { "UR+": 30, UR: 28, SSR: 25, "SR+": 23, SR: 21 }; // 임무 기본 점수
+      var SHEET = { "UR+": 60, UR: 56, SSR: 50, "SR+": 46, SR: 42 }; // 시트의 꽃 점수 (추천 순위용)
+      var APPEAR = {
+        "UR+": 0.0102,
+        UR: 0.0435,
+        SSR: 0.0511,
+        "SR+": 0.0512,
+        SR: 0.0413,
+      };
+      var ORDER = ["UR+", "UR", "SSR", "SR+", "SR"]; // 앞이 높은 등급
+      var GCLASS = {
+        "UR+": "g-ur-plus",
+        UR: "g-ur",
+        SSR: "g-ssr",
+        "SR+": "g-sr-plus",
+        SR: "g-sr",
+      };
       var STALE_MS = 2 * 60 * 60 * 1000;
-      var WISH_TOP = 5;                    // 길드원마다 몇 순위까지 모을지
-      var WISH_SKIP = { 'UR':1, 'UR+':1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
-      var UR_POOR_MAX = 4;                 // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
+      var WISH_TOP = 5; // 길드원마다 몇 순위까지 모을지
+      var WISH_SKIP = { UR: 1, "UR+": 1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
+      var UR_POOR_MAX = 4; // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
 
-      var snap = null, board = {}, counts = {};
-      var stats = {}, flowerIdx = {}, wish = [];
-      var me = '', pw = '';
-      var sortBy = 'scarce';
+      var snap = null,
+        board = {},
+        counts = {};
+      var stats = {},
+        flowerIdx = {},
+        wish = [];
+      var me = "",
+        pw = "";
+      var sortBy = "scarce";
       var current = null;
-      var showAllCand = false, showAllSlots = false, wishOpen = false;
+      var showAllCand = false,
+        showAllSlots = false,
+        wishOpen = false;
 
-      try { me = localStorage.getItem('boardMe') || ''; } catch (e) {}
-      try { pw = localStorage.getItem('boardPw') || ''; } catch (e) {}
+      try {
+        me = localStorage.getItem("boardMe") || "";
+      } catch (e) {}
+      try {
+        pw = localStorage.getItem("boardPw") || "";
+      } catch (e) {}
 
       function esc(s) {
         return String(s).replace(/[&<>"']/g, function (c) {
-          return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c];
         });
       }
-      function imgUrl(name) { return IMG + encodeURIComponent(name) + '.png'; }
+      function imgUrl(name) {
+        return IMG + encodeURIComponent(name) + ".png";
+      }
 
       var msgTimer = null;
       function say(text, isErr) {
-        document.getElementById('msg').innerHTML =
-          '<div class="msg ' + (isErr ? 'err' : 'ok') + '">' + esc(text) + '</div>';
-        if (isErr) window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById("msg").innerHTML =
+          '<div class="msg ' +
+          (isErr ? "err" : "ok") +
+          '">' +
+          esc(text) +
+          "</div>";
+        if (isErr) window.scrollTo({ top: 0, behavior: "smooth" });
         clearTimeout(msgTimer);
-        msgTimer = setTimeout(function () { document.getElementById('msg').innerHTML = ''; }, 6000);
+        msgTimer = setTimeout(function () {
+          document.getElementById("msg").innerHTML = "";
+        }, 6000);
       }
       function ago(iso) {
         var m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-        if (m < 1) return '방금';
-        if (m < 60) return m + '분 전';
+        if (m < 1) return "방금";
+        if (m < 60) return m + "분 전";
         var h = Math.floor(m / 60);
-        if (h < 24) return h + '시간 전';
-        return Math.floor(h / 24) + '일 전';
+        if (h < 24) return h + "시간 전";
+        return Math.floor(h / 24) + "일 전";
       }
 
       /* ---------- 서버 ---------- */
       function api(body) {
         return fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }).then(function (r) { return r.json(); }).then(function (j) {
-          if (!j.ok) throw new Error(j.error || '요청이 거부됐습니다.');
-          return j;
-        });
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (!j.ok) throw new Error(j.error || "요청이 거부됐습니다.");
+            return j;
+          });
       }
 
       function reload(loud) {
-        return fetch(API, { cache: 'no-store' })
-          .then(function (r) { return r.json(); })
+        return fetch(API, { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
           .then(function (j) {
-            if (!j.ok) throw new Error('서버가 데이터를 주지 않았습니다.');
-            snap = j.snapshot; board = j.board || {}; counts = j.counts || {};
+            if (!j.ok) throw new Error("서버가 데이터를 주지 않았습니다.");
+            snap = j.snapshot;
+            board = j.board || {};
+            counts = j.counts || {};
             if (!snap) {
-              document.getElementById('snapNote').textContent =
+              document.getElementById("snapNote").textContent =
                 '아직 시트 데이터가 없습니다. 관리자 화면에서 "임무 보드로 내보내기" 를 눌러 주세요.';
               return;
             }
             prepare();
             renderAll();
-            if (loud) say('보드를 새로고침했습니다.');
+            if (loud) say("보드를 새로고침했습니다.");
           })
-          .catch(function (e) { say('불러오지 못했습니다: ' + e.message, true); });
+          .catch(function (e) {
+            say("불러오지 못했습니다: " + e.message, true);
+          });
       }
 
       /* ---------- 계산 ---------- */
       function prepare() {
         flowerIdx = {};
-        var gradeTotal = {}, holders = [];
+        var gradeTotal = {},
+          holders = [];
         snap.flowers.forEach(function (f, i) {
           flowerIdx[f.name] = i;
           gradeTotal[f.grade] = (gradeTotal[f.grade] || 0) + 1;
         });
         snap.flowers.forEach(function (f, i) {
           var n = 0;
-          snap.members.forEach(function (m) { if ((snap.unlocked[m] || '').charAt(i) === '1') n++; });
+          snap.members.forEach(function (m) {
+            if ((snap.unlocked[m] || "").charAt(i) === "1") n++;
+          });
           holders[i] = n;
         });
 
@@ -366,11 +818,15 @@
         var wishMap = {};
 
         snap.members.forEach(function (name) {
-          var bits = snap.unlocked[name] || '';
+          var bits = snap.unlocked[name] || "";
           var ups = snap.upgrades[name] || {};
-          var per = {}, total = 0;
+          var per = {},
+            total = 0;
           snap.flowers.forEach(function (f, i) {
-            if (bits.charAt(i) === '1') { per[f.grade] = (per[f.grade] || 0) + 1; total++; }
+            if (bits.charAt(i) === "1") {
+              per[f.grade] = (per[f.grade] || 0) + 1;
+              total++;
+            }
           });
 
           // 기회 확률 p = Σ (등급 등장확률 × 그 등급 중 내가 해금한 비율)
@@ -380,33 +836,48 @@
             p += APPEAR[g] * (per[g] / gradeTotal[g]);
           });
 
-          var best = '';
-          for (var i = 0; i < ORDER.length; i++) { if (per[ORDER[i]]) { best = ORDER[i]; break; } }
+          var best = "";
+          for (var i = 0; i < ORDER.length; i++) {
+            if (per[ORDER[i]]) {
+              best = ORDER[i];
+              break;
+            }
+          }
 
           var used = counts[name] || 0;
           var remain = Math.max(MAX_COUNT - used, 0);
           stats[name] = {
-            unlocked: total, p: p, best: best, bestIdx: ORDER.indexOf(best),
-            used: used, remain: remain,
+            unlocked: total,
+            p: p,
+            best: best,
+            bestIdx: ORDER.indexOf(best),
+            used: used,
+            remain: remain,
             // 희소도 = 남은 횟수 ÷ 기회 확률. 해금이 없으면 p=0 이라 낼 수 없다 -> null
-            scarcity: p > 0 ? remain / p : null
+            scarcity: p > 0 ? remain / p : null,
           };
 
           // 이 사람에게 추천되는 꽃 상위 몇 개 (시트의 점수 공식과 같은 얼개)
           var mine = [];
           snap.flowers.forEach(function (f, i) {
-            if (bits.charAt(i) !== '1') return;
+            if (bits.charAt(i) !== "1") return;
             var up = ups[f.name] || 0;
             mine.push({
               i: i,
-              v: (SHEET[f.grade] + up) * 10000 - holders[i] * 100 - (per[f.grade] || 0)
+              v:
+                (SHEET[f.grade] + up) * 10000 -
+                holders[i] * 100 -
+                (per[f.grade] || 0),
             });
           });
-          mine.sort(function (a, b) { return b.v - a.v; });
+          mine.sort(function (a, b) {
+            return b.v - a.v;
+          });
           mine.slice(0, WISH_TOP).forEach(function (x) {
             var f = snap.flowers[x.i];
-            if (WISH_SKIP[f.grade]) return;                 // UR·UR+ 는 뺀다
-            if (!wishMap[f.name]) wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
+            if (WISH_SKIP[f.grade]) return; // UR·UR+ 는 뺀다
+            if (!wishMap[f.name])
+              wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
             wishMap[f.name].who.push(name);
           });
 
@@ -417,126 +888,219 @@
            * 그래서 이 꽃들은 놓치면 안 된다.
            * 여기 붙는 이름은 '조건에 걸리는 사람' 뿐이다 — 다른 해금자는 넣지 않는다.
            */
-          var urCount = (per['UR'] || 0) + (per['UR+'] || 0);
+          var urCount = (per["UR"] || 0) + (per["UR+"] || 0);
           if (urCount > 0 && urCount <= UR_POOR_MAX) {
             snap.flowers.forEach(function (f, i) {
-              if (bits.charAt(i) !== '1' || !WISH_SKIP[f.grade]) return;
-              if (!wishMap[f.name]) wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
+              if (bits.charAt(i) !== "1" || !WISH_SKIP[f.grade]) return;
+              if (!wishMap[f.name])
+                wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
               wishMap[f.name].ur = true;
-              if (wishMap[f.name].who.indexOf(name) < 0) wishMap[f.name].who.push(name);
+              if (wishMap[f.name].who.indexOf(name) < 0)
+                wishMap[f.name].who.push(name);
             });
           }
         });
 
-        wish = Object.keys(wishMap).map(function (k) { return wishMap[k]; });
+        wish = Object.keys(wishMap).map(function (k) {
+          return wishMap[k];
+        });
         // UR 예외 건을 맨 앞에 — 56~60점짜리라 놓치면 손해가 제일 크다
         wish.sort(function (a, b) {
-          return (b.ur ? 1 : 0) - (a.ur ? 1 : 0) ||
-                 b.who.length - a.who.length ||
-                 ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) ||
-                 a.name.localeCompare(b.name);
+          return (
+            (b.ur ? 1 : 0) - (a.ur ? 1 : 0) ||
+            b.who.length - a.who.length ||
+            ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) ||
+            a.name.localeCompare(b.name)
+          );
         });
 
-        document.getElementById('me').innerHTML =
+        document.getElementById("me").innerHTML =
           '<option value="">내 이름 고르기</option>' +
-          snap.members.map(function (n) {
-            return '<option value="' + esc(n) + '"' + (n === me ? ' selected' : '') + '>' + esc(n) + '</option>';
-          }).join('');
+          snap.members
+            .map(function (n) {
+              return (
+                '<option value="' +
+                esc(n) +
+                '"' +
+                (n === me ? " selected" : "") +
+                ">" +
+                esc(n) +
+                "</option>"
+              );
+            })
+            .join("");
 
-        document.getElementById('snapNote').textContent =
-          '길드원 ' + snap.members.length + '명 · 꽃 ' + snap.flowers.length + '개 · ' +
-          '시트 기준 ' + ago(snap.updatedAt);
+        document.getElementById("snapNote").textContent =
+          "길드원 " +
+          snap.members.length +
+          "명 · 꽃 " +
+          snap.flowers.length +
+          "개 · " +
+          "시트 기준 " +
+          ago(snap.updatedAt);
       }
 
       function setMe() {
-        me = document.getElementById('me').value;
-        try { localStorage.setItem('boardMe', me); } catch (e) {}
+        me = document.getElementById("me").value;
+        try {
+          localStorage.setItem("boardMe", me);
+        } catch (e) {}
         renderAll();
       }
 
       function gotoCounts() {
-        document.getElementById('counts').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document
+          .getElementById("counts")
+          .scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
       function renderMyCount() {
-        var box = document.getElementById('myCount');
+        var box = document.getElementById("myCount");
         var st = me && stats[me];
-        if (!st) { box.className = 'myct'; box.innerHTML = '<b>—</b><span>내 횟수</span>'; return; }
-        box.className = 'myct' + (st.used >= MAX_COUNT ? ' full' : '');
-        box.innerHTML = '<b>' + st.used + '/' + MAX_COUNT + '</b><span>내 횟수</span>';
+        if (!st) {
+          box.className = "myct";
+          box.innerHTML = "<b>—</b><span>내 횟수</span>";
+          return;
+        }
+        box.className = "myct" + (st.used >= MAX_COUNT ? " full" : "");
+        box.innerHTML =
+          "<b>" + st.used + "/" + MAX_COUNT + "</b><span>내 횟수</span>";
       }
 
       /* ---------- 꽃 이름 자동완성 ---------- */
-      var SUG_MIN = 2, SUG_MAX = 8;
-      var sugList = [], sugIdx = -1;
+      var SUG_MIN = 2,
+        SUG_MAX = 8;
+      var sugList = [],
+        sugIdx = -1;
 
       function onFlowerInput() {
-        var q = document.getElementById('flowerName').value.trim().replace(/\s+/g, '');
-        if (!snap || q.length < SUG_MIN) { closeSug(); return; }
-        sugList = snap.flowers.filter(function (f) {
-          return f.name.replace(/\s+/g, '').indexOf(q) >= 0;
-        }).slice(0, SUG_MAX);
+        var q = document
+          .getElementById("flowerName")
+          .value.trim()
+          .replace(/\s+/g, "");
+        if (!snap || q.length < SUG_MIN) {
+          closeSug();
+          return;
+        }
+        sugList = snap.flowers
+          .filter(function (f) {
+            return f.name.replace(/\s+/g, "").indexOf(q) >= 0;
+          })
+          .slice(0, SUG_MAX);
         sugIdx = -1;
         renderSug();
       }
 
       function renderSug() {
-        var box = document.getElementById('flowerSug');
+        var box = document.getElementById("flowerSug");
         if (!sugList.length) {
           box.innerHTML = '<div class="none">맞는 꽃이 없습니다.</div>';
-          box.className = 'sug open';
+          box.className = "sug open";
           return;
         }
-        box.innerHTML = sugList.map(function (f, i) {
-          return '<div class="s' + (i === sugIdx ? ' sel' : '') + '" onmousedown="pickSug(' + i + ')">' +
-                   '<img src="' + imgUrl(f.name) + '" alt="" ' +
-                        'onerror="this.style.visibility=&quot;hidden&quot;">' +
-                   '<span class="n">' + esc(f.name) + '</span>' +
-                   '<span class="gtag ' + (GCLASS[f.grade] || 'g-none') + '">' + esc(f.grade) + '</span>' +
-                 '</div>';
-        }).join('');
-        box.className = 'sug open';
+        box.innerHTML = sugList
+          .map(function (f, i) {
+            return (
+              '<div class="s' +
+              (i === sugIdx ? " sel" : "") +
+              '" onmousedown="pickSug(' +
+              i +
+              ')">' +
+              '<img src="' +
+              imgUrl(f.name) +
+              '" alt="" ' +
+              'onerror="this.style.visibility=&quot;hidden&quot;">' +
+              '<span class="n">' +
+              esc(f.name) +
+              "</span>" +
+              '<span class="gtag ' +
+              (GCLASS[f.grade] || "g-none") +
+              '">' +
+              esc(f.grade) +
+              "</span>" +
+              "</div>"
+            );
+          })
+          .join("");
+        box.className = "sug open";
       }
 
       function closeSug() {
-        document.getElementById('flowerSug').className = 'sug';
+        document.getElementById("flowerSug").className = "sug";
         sugIdx = -1;
       }
 
       function pickSug(i) {
         var f = sugList[i];
         if (!f) return;
-        document.getElementById('flowerName').value = f.name;
+        document.getElementById("flowerName").value = f.name;
         closeSug();
         lookup();
       }
 
       function flowerKey(e) {
-        var open = document.getElementById('flowerSug').className.indexOf('open') >= 0;
+        var open =
+          document.getElementById("flowerSug").className.indexOf("open") >= 0;
         if (open && sugList.length) {
-          if (e.key === 'ArrowDown') { e.preventDefault(); sugIdx = (sugIdx + 1) % sugList.length; renderSug(); return; }
-          if (e.key === 'ArrowUp')   { e.preventDefault(); sugIdx = (sugIdx - 1 + sugList.length) % sugList.length; renderSug(); return; }
-          if (e.key === 'Escape')    { closeSug(); return; }
-          if (e.key === 'Enter' && sugIdx >= 0) { e.preventDefault(); pickSug(sugIdx); return; }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            sugIdx = (sugIdx + 1) % sugList.length;
+            renderSug();
+            return;
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            sugIdx = (sugIdx - 1 + sugList.length) % sugList.length;
+            renderSug();
+            return;
+          }
+          if (e.key === "Escape") {
+            closeSug();
+            return;
+          }
+          if (e.key === "Enter" && sugIdx >= 0) {
+            e.preventDefault();
+            pickSug(sugIdx);
+            return;
+          }
         }
-        if (e.key === 'Enter') { closeSug(); lookup(); }
+        if (e.key === "Enter") {
+          closeSug();
+          lookup();
+        }
       }
 
       /* ---------- 등록 -> 후보 ---------- */
       function lookup() {
         closeSug();
-        var no = parseInt(document.getElementById('slotNo').value, 10);
-        var name = document.getElementById('flowerName').value.trim();
-        if (!(no >= 1 && no <= 66)) { say('임무 번호는 1~66 사이로 넣어 주세요.', true); return; }
-        if (!name) { say('꽃 이름을 넣어 주세요.', true); return; }
+        var no = parseInt(document.getElementById("slotNo").value, 10);
+        var name = document.getElementById("flowerName").value.trim();
+        if (!(no >= 1 && no <= 66)) {
+          say("임무 번호는 1~66 사이로 넣어 주세요.", true);
+          return;
+        }
+        if (!name) {
+          say("꽃 이름을 넣어 주세요.", true);
+          return;
+        }
 
         var idx = flowerIdx[name];
         if (idx === undefined) {
-          document.getElementById('candBox').innerHTML = '';
-          say("'" + name + "' 은 목록에 없습니다. 21점 미만 임무이거나 이름이 다릅니다.", true);
+          document.getElementById("candBox").innerHTML = "";
+          say(
+            "'" +
+              name +
+              "' 은 목록에 없습니다. 21점 미만 임무이거나 이름이 다릅니다.",
+            true,
+          );
           return;
         }
-        current = { no: no, flower: name, grade: snap.flowers[idx].grade, idx: idx };
+        current = {
+          no: no,
+          flower: name,
+          grade: snap.flowers[idx].grade,
+          idx: idx,
+        };
         showAllCand = false;
         renderCandidates();
       }
@@ -553,112 +1117,184 @@
       function candidates() {
         var gi = ORDER.indexOf(current.grade);
         var holders = snap.members.filter(function (name) {
-          return (snap.unlocked[name] || '').charAt(current.idx) === '1';
+          return (snap.unlocked[name] || "").charAt(current.idx) === "1";
         });
 
-        var pick = showAllCand ? holders : holders.filter(function (n) {
-          var b = stats[n].bestIdx;
-          return b < 0 || b >= gi - 1;
-        });
+        var pick = showAllCand
+          ? holders
+          : holders.filter(function (n) {
+              var b = stats[n].bestIdx;
+              return b < 0 || b >= gi - 1;
+            });
 
         var list = pick.map(function (name) {
           var up = (snap.upgrades[name] || {})[current.flower] || 0;
-          return { name: name, up: up, score: BASE[current.grade] * 2 + up, st: stats[name] };
+          return {
+            name: name,
+            up: up,
+            score: BASE[current.grade] * 2 + up,
+            st: stats[name],
+          };
         });
 
         list.sort(function (a, b) {
-          if ((a.st.remain === 0) !== (b.st.remain === 0)) return a.st.remain === 0 ? 1 : -1;
-          if (sortBy === 'up') return (b.up - a.up) || ((b.st.scarcity || 0) - (a.st.scarcity || 0));
-          return ((b.st.scarcity || 0) - (a.st.scarcity || 0)) || (b.up - a.up);
+          if ((a.st.remain === 0) !== (b.st.remain === 0))
+            return a.st.remain === 0 ? 1 : -1;
+          if (sortBy === "up")
+            return b.up - a.up || (b.st.scarcity || 0) - (a.st.scarcity || 0);
+          return (b.st.scarcity || 0) - (a.st.scarcity || 0) || b.up - a.up;
         });
-        return { list: list, hidden: holders.length - pick.length, total: holders.length };
+        return {
+          list: list,
+          hidden: holders.length - pick.length,
+          total: holders.length,
+        };
       }
 
       function renderCandidates() {
         if (!current) return;
         var r = candidates();
-        var list = r.list, g = current.grade, total = r.total;
-        var top = list.length ? (list[0].st.scarcity || 0) : 0;
+        var list = r.list,
+          g = current.grade,
+          total = r.total;
+        var top = list.length ? list[0].st.scarcity || 0 : 0;
 
         var html =
           '<div class="task-head">' +
-            '<img src="' + imgUrl(current.flower) + '" alt="" ' +
-                 'onerror="this.style.visibility=&quot;hidden&quot;">' +
-            '<div style="flex:1;min-width:0;">' +
-              '<div class="nm">' + current.no + '번 · ' + esc(current.flower) +
-                ' <span class="gtag ' + (GCLASS[g] || 'g-none') + '">' + esc(g) + '</span></div>' +
-              '<div class="sub">기본 ' + (BASE[g] * 2) + '점 (업그레이드 기준) · 해금 ' + total + '명</div>' +
-            '</div>' +
-          '</div>';
+          '<img src="' +
+          imgUrl(current.flower) +
+          '" alt="" ' +
+          'onerror="this.style.visibility=&quot;hidden&quot;">' +
+          '<div style="flex:1;min-width:0;">' +
+          '<div class="nm">' +
+          current.no +
+          "번 · " +
+          esc(current.flower) +
+          ' <span class="gtag ' +
+          (GCLASS[g] || "g-none") +
+          '">' +
+          esc(g) +
+          "</span></div>" +
+          '<div class="sub">기본 ' +
+          BASE[g] * 2 +
+          "점 (업그레이드 기준) · 해금 " +
+          total +
+          "명</div>" +
+          "</div>" +
+          "</div>";
 
         if (!total) {
-          html += '<div class="msg err" style="margin-top:10px;">' +
-                  '해금한 사람이 아무도 없습니다. <b>새로고침 하세요.</b></div>';
-          document.getElementById('candBox').innerHTML = html;
+          html +=
+            '<div class="msg err" style="margin-top:10px;">' +
+            "해금한 사람이 아무도 없습니다. <b>새로고침 하세요.</b></div>";
+          document.getElementById("candBox").innerHTML = html;
           return;
         }
 
         if (!list.length) {
-          html += '<div class="msg err" style="margin-top:10px;">' +
-                  '할 수 있는 ' + total + '명이 전부 <b>더 높은 등급도 가능한 사람</b>입니다. ' +
-                  '<b>새로고침 하세요.</b>' +
-                  '<div style="margin-top:8px;"><button class="btn sm" onclick="toggleAllCand()">' +
-                  '그래도 보기</button></div></div>';
-          document.getElementById('candBox').innerHTML = html;
+          html +=
+            '<div class="msg err" style="margin-top:10px;">' +
+            "할 수 있는 " +
+            total +
+            "명이 전부 <b>더 높은 등급도 가능한 사람</b>입니다. " +
+            "<b>새로고침 하세요.</b>" +
+            '<div style="margin-top:8px;"><button class="btn sm" onclick="toggleAllCand()">' +
+            "그래도 보기</button></div></div>";
+          document.getElementById("candBox").innerHTML = html;
           renderCandidates.list = [];
           return;
         }
 
         html +=
           '<div class="sortbar">' +
-            '<button class="btn sm' + (sortBy === 'scarce' ? ' on' : '') + '" onclick="setSort(\'scarce\')">기회 드문 순</button>' +
-            '<button class="btn sm' + (sortBy === 'up'     ? ' on' : '') + '" onclick="setSort(\'up\')">개량 순</button>' +
-          '</div>';
+          '<button class="btn sm' +
+          (sortBy === "scarce" ? " on" : "") +
+          '" onclick="setSort(\'scarce\')">기회 드문 순</button>' +
+          '<button class="btn sm' +
+          (sortBy === "up" ? " on" : "") +
+          '" onclick="setSort(\'up\')">개량 순</button>' +
+          "</div>";
 
         var gi = ORDER.indexOf(g);
-        html += list.map(function (c, i) {
-          var st = c.st;
-          var done = st.remain === 0;
-          var scar = st.scarcity === null ? '—' : Math.round(st.scarcity);
-          var isTight = !done && st.scarcity !== null && top > 0 && st.scarcity >= top * 0.7;
-          // 이 사람 상한이 임무 등급보다 높으면 그 한 칸이 아깝다는 뜻
-          var over = st.bestIdx >= 0 && st.bestIdx < gi;
-          return '<div class="cand' + (done ? ' dim' : '') + '"' +
-                   (done ? '' : ' onclick="assignAt(' + i + ')"') + '>' +
-                   '<div class="who">' +
-                     '<b>' + esc(c.name) + '</b>' +
-                     '<div class="meta">' + st.used + '/' + MAX_COUNT +
-                       ' · 최고 ' + (st.best || '없음') +
-                       (over ? ' <span class="warn">! 최대 가능 등급보다 낮음</span>' : '') +
-                       (c.up ? ' · 개량 +' + c.up : '') +
-                     '</div>' +
-                   '</div>' +
-                   '<div class="num">' +
-                     '<div class="pt">' + c.score + '점</div>' +
-                     '<div class="sc' + (isTight ? ' tight' : '') + '">희소도 ' + scar + '</div>' +
-                   '</div>' +
-                 '</div>';
-        }).join('');
+        html += list
+          .map(function (c, i) {
+            var st = c.st;
+            var done = st.remain === 0;
+            var scar = st.scarcity === null ? "—" : Math.round(st.scarcity);
+            var isTight =
+              !done &&
+              st.scarcity !== null &&
+              top > 0 &&
+              st.scarcity >= top * 0.7;
+            // 이 사람 상한이 임무 등급보다 높으면 그 한 칸이 아깝다는 뜻
+            var over = st.bestIdx >= 0 && st.bestIdx < gi;
+            return (
+              '<div class="cand' +
+              (done ? " dim" : "") +
+              '"' +
+              (done ? "" : ' onclick="assignAt(' + i + ')"') +
+              ">" +
+              '<div class="who">' +
+              "<b>" +
+              esc(c.name) +
+              "</b>" +
+              '<div class="meta">' +
+              st.used +
+              "/" +
+              MAX_COUNT +
+              " · 최고 " +
+              (st.best || "없음") +
+              (over
+                ? ' <span class="warn">! 최대 가능 등급보다 낮음</span>'
+                : "") +
+              (c.up ? " · 개량 +" + c.up : "") +
+              "</div>" +
+              "</div>" +
+              '<div class="num">' +
+              '<div class="pt">' +
+              c.score +
+              "점</div>" +
+              '<div class="sc' +
+              (isTight ? " tight" : "") +
+              '">희소도 ' +
+              scar +
+              "</div>" +
+              "</div>" +
+              "</div>"
+            );
+          })
+          .join("");
 
         if (r.hidden) {
-          html += '<div style="margin-top:8px;">' +
-                  '<button class="btn sm" onclick="toggleAllCand()">' +
-                  '상위 등급자 ' + r.hidden + '명 숨김 · 모두 보기</button></div>';
+          html +=
+            '<div style="margin-top:8px;">' +
+            '<button class="btn sm" onclick="toggleAllCand()">' +
+            "상위 등급자 " +
+            r.hidden +
+            "명 숨김 · 모두 보기</button></div>";
         } else if (showAllCand) {
-          html += '<div style="margin-top:8px;">' +
-                  '<button class="btn sm on" onclick="toggleAllCand()">등급 맞는 사람만 보기</button></div>';
+          html +=
+            '<div style="margin-top:8px;">' +
+            '<button class="btn sm on" onclick="toggleAllCand()">등급 맞는 사람만 보기</button></div>';
         }
 
-        html += '<p class="note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. ' +
-                '높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>' +
-                '이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다.</p>';
+        html +=
+          '<p class="note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. ' +
+          "높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>" +
+          "이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다.</p>";
 
-        document.getElementById('candBox').innerHTML = html;
+        document.getElementById("candBox").innerHTML = html;
         renderCandidates.list = list;
       }
 
-      function setSort(v) { sortBy = v; renderCandidates(); }
-      function toggleAllCand() { showAllCand = !showAllCand; renderCandidates(); }
+      function setSort(v) {
+        sortBy = v;
+        renderCandidates();
+      }
+      function toggleAllCand() {
+        showAllCand = !showAllCand;
+        renderCandidates();
+      }
       function assignAt(i) {
         var c = renderCandidates.list && renderCandidates.list[i];
         if (c) assign(c.name);
@@ -668,114 +1304,185 @@
         if (!current) return;
         if (!ensurePw()) return;
         var prev = board[String(current.no)];
-        if (prev && !confirm(current.no + '번에 이미 있습니다: ' + prev.flower +
-                             (prev.member ? ' → ' + prev.member : '') + '\n\n덮어쓸까요?')) return;
-        var no = current.no, flower = current.flower, grade = current.grade;
-        api({ action: 'assign', pw: pw, no: no, flower: flower, grade: grade, member: name })
+        if (
+          prev &&
+          !confirm(
+            current.no +
+              "번에 이미 있습니다: " +
+              prev.flower +
+              (prev.member ? " → " + prev.member : "") +
+              "\n\n덮어쓸까요?",
+          )
+        )
+          return;
+        var no = current.no,
+          flower = current.flower,
+          grade = current.grade;
+        api({
+          action: "assign",
+          pw: pw,
+          no: no,
+          flower: flower,
+          grade: grade,
+          member: name,
+        })
           .then(function () {
-            say(no + '번 · ' + flower + ' → ' + name);
-            document.getElementById('slotNo').value = '';
-            document.getElementById('flowerName').value = '';
-            document.getElementById('candBox').innerHTML = '';
+            say(no + "번 · " + flower + " → " + name);
+            document.getElementById("slotNo").value = "";
+            document.getElementById("flowerName").value = "";
+            document.getElementById("candBox").innerHTML = "";
             current = null;
             return reload();
           })
           .catch(function (e) {
             say(e.message, true);
-            if (e.message.indexOf('비밀번호') >= 0) {
-              pw = '';
-              try { localStorage.removeItem('boardPw'); } catch (e2) {}
+            if (e.message.indexOf("비밀번호") >= 0) {
+              pw = "";
+              try {
+                localStorage.removeItem("boardPw");
+              } catch (e2) {}
             }
           });
       }
 
       function ensurePw() {
         if (pw) return true;
-        var v = prompt('관리자 비밀번호를 넣어 주세요. (이 기기에 기억됩니다)');
+        var v = prompt("관리자 비밀번호를 넣어 주세요. (이 기기에 기억됩니다)");
         if (!v) return false;
         pw = v;
-        try { localStorage.setItem('boardPw', v); } catch (e) {}
+        try {
+          localStorage.setItem("boardPw", v);
+        } catch (e) {}
         return true;
       }
 
       /* ---------- 발견하면 등록해 주세요 ---------- */
       function toggleWish() {
         wishOpen = !wishOpen;
-        document.getElementById('wishBody').className = 'acc-body' + (wishOpen ? ' open' : '');
-        document.getElementById('wishArrow').textContent = wishOpen ? '▴' : '▾';
+        document.getElementById("wishBody").className =
+          "acc-body" + (wishOpen ? " open" : "");
+        document.getElementById("wishArrow").textContent = wishOpen ? "▴" : "▾";
       }
 
       var wishPick = -1;
 
       function renderWish() {
-        document.getElementById('wishCount').textContent = wish.length + '개';
+        document.getElementById("wishCount").textContent = wish.length + "개";
         if (!wish.length) {
-          document.getElementById('wishList').innerHTML =
+          document.getElementById("wishList").innerHTML =
             '<div class="empty-note">해당하는 꽃이 없습니다.</div>';
-          document.getElementById('wishDetail').innerHTML = '';
+          document.getElementById("wishDetail").innerHTML = "";
           return;
         }
-        document.getElementById('wishList').innerHTML = wish.map(function (w, i) {
-          return '<button class="chip' + (i === wishPick ? ' on' : '') + '" ' +
-                         'onclick="pickWish(' + i + ')" title="' + esc(w.name) + ' · ' + esc(w.grade) + '">' +
-                   '<img src="' + imgUrl(w.name) + '" alt="' + esc(w.name) + '" ' +
-                        'onerror="this.style.display=&quot;none&quot;;' +
-                                 'this.nextElementSibling.style.display=&quot;flex&quot;">' +
-                   '<span class="fb">' + esc(w.name) + '</span>' +
-                 '</button>';
-        }).join('');
+        document.getElementById("wishList").innerHTML = wish
+          .map(function (w, i) {
+            return (
+              '<button class="chip' +
+              (i === wishPick ? " on" : "") +
+              '" ' +
+              'onclick="pickWish(' +
+              i +
+              ')" title="' +
+              esc(w.name) +
+              " · " +
+              esc(w.grade) +
+              '">' +
+              '<img src="' +
+              imgUrl(w.name) +
+              '" alt="' +
+              esc(w.name) +
+              '" ' +
+              'onerror="this.style.display=&quot;none&quot;;' +
+              'this.nextElementSibling.style.display=&quot;flex&quot;">' +
+              '<span class="fb">' +
+              esc(w.name) +
+              "</span>" +
+              "</button>"
+            );
+          })
+          .join("");
         renderWishDetail();
       }
 
       function renderWishDetail() {
-        var box = document.getElementById('wishDetail');
+        var box = document.getElementById("wishDetail");
         var w = wish[wishPick];
-        if (!w) { box.innerHTML = ''; return; }
+        if (!w) {
+          box.innerHTML = "";
+          return;
+        }
 
         // 이미 보드에 올라와 있는지도 같이 알려 준다
-        var onBoard = Object.keys(board).map(function (k) { return board[k]; })
-          .filter(function (s) { return s.flower === w.name; })
-          .map(function (s) { return s.no + '번' + (s.member ? '(' + s.member + ')' : ''); });
+        var onBoard = Object.keys(board)
+          .map(function (k) {
+            return board[k];
+          })
+          .filter(function (s) {
+            return s.flower === w.name;
+          })
+          .map(function (s) {
+            return s.no + "번" + (s.member ? "(" + s.member + ")" : "");
+          });
 
         box.innerHTML =
           '<div class="wd">' +
-            '<img src="' + imgUrl(w.name) + '" alt="" onerror="this.style.visibility=&quot;hidden&quot;">' +
-            '<div class="t">' +
-              '<b>' + esc(w.name) + '</b> ' +
-              '<span class="gtag ' + (GCLASS[w.grade] || 'g-none') + '">' + esc(w.grade) + '</span>' +
-              '<div class="need">' + w.who.length + '명이 필요로 합니다</div>' +
-              '<div class="who">' + esc(w.who.join(', ')) + '</div>' +
-              (w.ur
-                ? '<div class="who"><b>UR 이상을 ' + UR_POOR_MAX + '개 이하로 가진 분들입니다.</b> ' +
-                  '이 꽃이 떠야 상위 등급을 할 수 있어요.</div>'
-                : '') +
-              (onBoard.length
-                ? '<div class="who">이미 보드에 있음 · ' + esc(onBoard.join(', ')) + '</div>'
-                : '') +
-              '<div style="margin-top:9px;"><button class="btn sm on" onclick="useWish()">' +
-                '이 꽃으로 등록하기</button></div>' +
-            '</div>' +
-          '</div>';
+          '<img src="' +
+          imgUrl(w.name) +
+          '" alt="" onerror="this.style.visibility=&quot;hidden&quot;">' +
+          '<div class="t">' +
+          "<b>" +
+          esc(w.name) +
+          "</b> " +
+          '<span class="gtag ' +
+          (GCLASS[w.grade] || "g-none") +
+          '">' +
+          esc(w.grade) +
+          "</span>" +
+          '<div class="need">' +
+          w.who.length +
+          "명이 필요로 합니다</div>" +
+          '<div class="who">' +
+          esc(w.who.join(", ")) +
+          "</div>" +
+          (w.ur
+            ? '<div class="who">UR 우선 배분이 필요한 꽃입니다.</div>'
+            : "") +
+          (onBoard.length
+            ? '<div class="who">이미 보드에 있음 · ' +
+              esc(onBoard.join(", ")) +
+              "</div>"
+            : "") +
+          '<div style="margin-top:9px;"><button class="btn sm on" onclick="useWish()">' +
+          "이 꽃으로 등록하기</button></div>" +
+          "</div>" +
+          "</div>";
       }
 
       function pickWish(i) {
-        wishPick = (wishPick === i) ? -1 : i;
+        wishPick = wishPick === i ? -1 : i;
         renderWish();
       }
 
       function useWish() {
         var w = wish[wishPick];
         if (!w) return;
-        document.getElementById('flowerName').value = w.name;
-        document.getElementById('slotNo').value = '';
-        document.getElementById('slotNo').focus();
-        document.getElementById('slotNo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById("flowerName").value = w.name;
+        document.getElementById("slotNo").value = "";
+        document.getElementById("slotNo").focus();
+        document
+          .getElementById("slotNo")
+          .scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
       /* ---------- 보드 현황 ---------- */
       function slotList() {
-        return Object.keys(board).map(function (k) { return board[k]; })
-          .sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+        return Object.keys(board)
+          .map(function (k) {
+            return board[k];
+          })
+          .sort(function (a, b) {
+            return new Date(b.at) - new Date(a.at);
+          });
       }
 
       function renderGrid() {
@@ -783,80 +1490,154 @@
         var shown = showAllSlots ? all : all.slice(0, SHOW_SLOTS);
 
         if (!all.length) {
-          document.getElementById('grid').innerHTML =
+          document.getElementById("grid").innerHTML =
             '<div class="empty-note" style="grid-column:1/-1;">아직 등록한 임무가 없습니다.</div>';
-          document.getElementById('gridMore').innerHTML = '';
+          document.getElementById("gridMore").innerHTML = "";
           return;
         }
 
-        document.getElementById('grid').innerHTML = shown.map(function (s) {
-          var stale = Date.now() - new Date(s.at).getTime() > STALE_MS;
-          var mine = me && s.member === me;
-          return '<div class="slot' + (mine ? ' mine' : '') + (stale ? ' stale' : '') + '" ' +
-                      'title="' + esc(s.flower) + '" onclick="clearSlot(' + s.no + ')">' +
-                   '<div class="top">' +
-                     '<span class="no">' + s.no + '</span>' +
-                     '<span class="gtag ' + (GCLASS[s.grade] || 'g-none') + '">' + esc(s.grade || '?') + '</span>' +
-                   '</div>' +
-                   '<img src="' + imgUrl(s.flower) + '" alt="' + esc(s.flower) + '" ' +
-                        'onerror="this.style.display=&quot;none&quot;;' +
-                                 'this.nextElementSibling.style.display=&quot;block&quot;">' +
-                   '<span class="fl">' + esc(s.flower) + '</span>' +
-                   (s.member ? '<span class="mb">' + esc(s.member) + '</span>' : '') +
-                   '<span class="ag">' + ago(s.at) + '</span>' +
-                 '</div>';
-        }).join('');
+        document.getElementById("grid").innerHTML = shown
+          .map(function (s) {
+            var stale = Date.now() - new Date(s.at).getTime() > STALE_MS;
+            var mine = me && s.member === me;
+            return (
+              '<div class="slot' +
+              (mine ? " mine" : "") +
+              (stale ? " stale" : "") +
+              '" ' +
+              'title="' +
+              esc(s.flower) +
+              '" onclick="clearSlot(' +
+              s.no +
+              ')">' +
+              '<div class="top">' +
+              '<span class="no">' +
+              s.no +
+              "</span>" +
+              '<span class="gtag ' +
+              (GCLASS[s.grade] || "g-none") +
+              '">' +
+              esc(s.grade || "?") +
+              "</span>" +
+              "</div>" +
+              '<img src="' +
+              imgUrl(s.flower) +
+              '" alt="' +
+              esc(s.flower) +
+              '" ' +
+              'onerror="this.style.display=&quot;none&quot;;' +
+              'this.nextElementSibling.style.display=&quot;block&quot;">' +
+              '<span class="fl">' +
+              esc(s.flower) +
+              "</span>" +
+              (s.member
+                ? '<span class="mb">' + esc(s.member) + "</span>"
+                : "") +
+              '<span class="ag">' +
+              ago(s.at) +
+              "</span>" +
+              "</div>"
+            );
+          })
+          .join("");
 
-        document.getElementById('gridMore').innerHTML =
+        document.getElementById("gridMore").innerHTML =
           all.length > SHOW_SLOTS
             ? '<div style="margin-top:9px;"><button class="btn sm" onclick="toggleAllSlots()">' +
-              (showAllSlots ? '최근 ' + SHOW_SLOTS + '개만 보기' : '나머지 ' + (all.length - SHOW_SLOTS) + '개 더 보기') +
-              '</button></div>'
-            : '';
+              (showAllSlots
+                ? "최근 " + SHOW_SLOTS + "개만 보기"
+                : "나머지 " + (all.length - SHOW_SLOTS) + "개 더 보기") +
+              "</button></div>"
+            : "";
       }
 
-      function toggleAllSlots() { showAllSlots = !showAllSlots; renderGrid(); }
+      function toggleAllSlots() {
+        showAllSlots = !showAllSlots;
+        renderGrid();
+      }
 
       function clearSlot(no) {
         var s = board[String(no)];
         if (!s) return;
-        if (!confirm(no + '번을 비울까요?\n' + s.flower + (s.member ? ' → ' + s.member : ''))) return;
+        if (
+          !confirm(
+            no +
+              "번을 비울까요?\n" +
+              s.flower +
+              (s.member ? " → " + s.member : ""),
+          )
+        )
+          return;
         if (!ensurePw()) return;
-        api({ action: 'clearSlot', pw: pw, no: no })
-          .then(function () { say(no + '번을 비웠습니다.'); return reload(); })
-          .catch(function (e) { say(e.message, true); });
+        api({ action: "clearSlot", pw: pw, no: no })
+          .then(function () {
+            say(no + "번을 비웠습니다.");
+            return reload();
+          })
+          .catch(function (e) {
+            say(e.message, true);
+          });
       }
 
       /* ---------- 임무 횟수 ---------- */
       function renderCounts() {
-        document.getElementById('counts').innerHTML = snap.members.map(function (name, i) {
-          var st = stats[name] || { used: 0 };
-          var isMe = name === me;
-          var full = st.used >= MAX_COUNT;
-          return '<div class="cnt">' +
-                   '<span class="nm' + (isMe ? ' me' : '') + '">' + esc(name) + (isMe ? ' (나)' : '') + '</span>' +
-                   '<span class="val' + (full ? ' full' : '') + '">' + st.used + '/' + MAX_COUNT + '</span>' +
-                   '<span class="stepper">' +
-                     '<button onclick="bumpAt(' + i + ',-1)"' + (st.used <= 0 ? ' disabled' : '') + '>−</button>' +
-                     '<button onclick="bumpAt(' + i + ',1)"' + (full ? ' disabled' : '') + '>+</button>' +
-                   '</span>' +
-                 '</div>';
-        }).join('');
+        document.getElementById("counts").innerHTML = snap.members
+          .map(function (name, i) {
+            var st = stats[name] || { used: 0 };
+            var isMe = name === me;
+            var full = st.used >= MAX_COUNT;
+            return (
+              '<div class="cnt">' +
+              '<span class="nm' +
+              (isMe ? " me" : "") +
+              '">' +
+              esc(name) +
+              (isMe ? " (나)" : "") +
+              "</span>" +
+              '<span class="val' +
+              (full ? " full" : "") +
+              '">' +
+              st.used +
+              "/" +
+              MAX_COUNT +
+              "</span>" +
+              '<span class="stepper">' +
+              '<button onclick="bumpAt(' +
+              i +
+              ',-1)"' +
+              (st.used <= 0 ? " disabled" : "") +
+              ">−</button>" +
+              '<button onclick="bumpAt(' +
+              i +
+              ',1)"' +
+              (full ? " disabled" : "") +
+              ">+</button>" +
+              "</span>" +
+              "</div>"
+            );
+          })
+          .join("");
       }
 
-      var bumpTimer = null, pending = {};
-      function bumpAt(i, delta) { bump(snap.members[i], delta); }
+      var bumpTimer = null,
+        pending = {};
+      function bumpAt(i, delta) {
+        bump(snap.members[i], delta);
+      }
 
       function bump(name, delta) {
-        if (name !== me && !confirm(name + '님의 횟수를 고칩니다. 맞나요?')) return;
-        var cur = pending[name] !== undefined ? pending[name] : (counts[name] || 0);
+        if (name !== me && !confirm(name + "님의 횟수를 고칩니다. 맞나요?"))
+          return;
+        var cur =
+          pending[name] !== undefined ? pending[name] : counts[name] || 0;
         var next = Math.min(Math.max(cur + delta, 0), MAX_COUNT);
         pending[name] = next;
         counts[name] = next;
         if (stats[name]) {
           stats[name].used = next;
           stats[name].remain = Math.max(MAX_COUNT - next, 0);
-          stats[name].scarcity = stats[name].p > 0 ? stats[name].remain / stats[name].p : null;
+          stats[name].scarcity =
+            stats[name].p > 0 ? stats[name].remain / stats[name].p : null;
         }
         renderCounts();
         renderMyCount();
@@ -865,10 +1646,14 @@
         // 연타할 때 요청이 쏟아지지 않도록 잠깐 모았다 보낸다
         clearTimeout(bumpTimer);
         bumpTimer = setTimeout(function () {
-          var send = pending; pending = {};
+          var send = pending;
+          pending = {};
           Object.keys(send).forEach(function (who) {
-            api({ action: 'setCount', member: who, count: send[who] })
-              .catch(function (e) { say(who + ' 저장 실패: ' + e.message, true); });
+            api({ action: "setCount", member: who, count: send[who] }).catch(
+              function (e) {
+                say(who + " 저장 실패: " + e.message, true);
+              },
+            );
           });
         }, 700);
       }
@@ -889,7 +1674,7 @@
       setInterval(function () {
         if (document.hidden) return;
         var t = document.activeElement && document.activeElement.tagName;
-        if (t === 'INPUT' || t === 'SELECT') return;
+        if (t === "INPUT" || t === "SELECT") return;
         if (Object.keys(pending).length) return;
         reload();
       }, 30000);
