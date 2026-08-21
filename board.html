@@ -697,6 +697,7 @@
       var WISH_TOP = 5; // 길드원마다 몇 순위까지 모을지
       var WISH_SKIP = { UR: 1, "UR+": 1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
       var UR_POOR_MAX = 4; // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
+      var SPARSE_MAX = 5; // 눈높이 범위(최고 등급+한 칸 아래) 보유가 이 이하면 한 칸 더 낮은 등급도 후보로 넣는다
 
       var snap = null,
         board = {},
@@ -829,19 +830,36 @@
             }
           });
 
-          // 기회 확률 p = Σ (등급 등장확률 × 그 등급 중 내가 해금한 비율)
-          var p = 0;
-          ORDER.forEach(function (g) {
-            if (!gradeTotal[g] || !per[g]) return;
-            p += APPEAR[g] * (per[g] / gradeTotal[g]);
-          });
-
           var best = "";
           for (var i = 0; i < ORDER.length; i++) {
             if (per[ORDER[i]]) {
               best = ORDER[i];
               break;
             }
+          }
+          var bestIdx = ORDER.indexOf(best);
+
+          /*
+           * 기회 확률 p = Σ (등급 등장확률 × 그 등급 중 내가 해금한 비율)
+           * 단, "최고 등급 + 한 칸 아래" 만 센다 — 배분 규칙(2순위 필터)이
+           * 그 범위 밖 등급에는 임무를 절대 주지 않기 때문. 범위 밖까지 넣으면
+           * 하위 등급을 많이 가진 사람의 p 가 부풀어서, 정작 선택지가 좁은
+           * 사람(고등급만 조금 가진 사람)이 희소도 순위에서 밀린다.
+           * (2026-08-19 발견 → 2026-08-21 적용, 기능-임무보드.md 참고)
+           *
+           * spanHeld = 이 범위(최고 등급 + 한 칸 아래) 안에서 실제로 보유한 꽃 개수.
+           * p 계산에는 안 쓰지만, 후보 필터에서 "이 범위가 너무 좁은 사람"을
+           * 가려내는 데 쓴다 (candidates() 의 SPARSE_MAX 참고).
+           */
+          var p = 0;
+          var spanHeld = 0;
+          if (bestIdx >= 0) {
+            [ORDER[bestIdx], ORDER[bestIdx + 1]].forEach(function (g) {
+              if (!g) return;
+              spanHeld += per[g] || 0;
+              if (!gradeTotal[g] || !per[g]) return;
+              p += APPEAR[g] * (per[g] / gradeTotal[g]);
+            });
           }
 
           var used = counts[name] || 0;
@@ -850,7 +868,8 @@
             unlocked: total,
             p: p,
             best: best,
-            bestIdx: ORDER.indexOf(best),
+            bestIdx: bestIdx,
+            spanHeld: spanHeld,
             used: used,
             remain: remain,
             // 희소도 = 남은 횟수 ÷ 기회 확률. 해금이 없으면 p=0 이라 낼 수 없다 -> null
@@ -1113,6 +1132,11 @@
        * 낮은 등급 꽃을 가진 사람은 대개 꽃을 많이 모은 사람이라 상한도 높기 때문이다.
        * 그건 문제가 아니라 답이다: 그 임무는 새로고침하는 게 맞다.
        * 새로고침 2다이아로 +18점을 노리는 게, 상위 등급자의 한 칸을 태우는 것보다 싸다.
+       *
+       * 예외 — 눈높이 범위(최고 등급+한 칸 아래)에 꽃이 SPARSE_MAX개 이하뿐인 사람은
+       * 한 칸 더 낮은 등급까지 후보로 넣는다. 이 범위가 좁으면 임무 자체가 잘 안 뜨는데
+       * (기능-임무보드.md "플린이 문제"), 기회가 뜰 때마다 후보에서마저 빠지면 24회를
+       * 채울 길이 아예 막힌다. 희소도 계산(p)은 건드리지 않고 후보 필터만 넓힌다.
        */
       function candidates() {
         var gi = ORDER.indexOf(current.grade);
@@ -1123,8 +1147,10 @@
         var pick = showAllCand
           ? holders
           : holders.filter(function (n) {
-              var b = stats[n].bestIdx;
-              return b < 0 || b >= gi - 1;
+              var st = stats[n];
+              if (st.bestIdx < 0) return true;
+              var floor = st.spanHeld <= SPARSE_MAX ? gi - 2 : gi - 1;
+              return st.bestIdx >= floor;
             });
 
         var list = pick.map(function (name) {
@@ -1281,7 +1307,10 @@
         html +=
           '<p class="note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. ' +
           "높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>" +
-          "이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다.</p>";
+          "이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다. " +
+          "단, 눈높이 범위에 꽃이 " +
+          SPARSE_MAX +
+          "개 이하뿐인 사람은 한 칸 더 낮은 등급도 후보로 보여줍니다.</p>";
 
         document.getElementById("candBox").innerHTML = html;
         renderCandidates.list = list;
