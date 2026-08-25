@@ -672,7 +672,8 @@
 
     <script>
       var API = "https://guild-flower-worker.saeunezip.workers.dev";
-      var IMG = "https://saeunezip.github.io/cozy-flower/";
+      var IMG = API + "/icon/";  // 2026-08-26부터 GitHub Pages 대신 Worker(R2)에서 서빙
+      var IMG_VER = "1";  // 이전 과정에서 브라우저가 캐시해버린 404를 우회하기 위한 버전 표시
       var MAX_COUNT = 24;
       var SHOW_SLOTS = 30; // 보드 현황에 한 번에 보여 줄 칸 수
 
@@ -732,7 +733,7 @@
         });
       }
       function imgUrl(name) {
-        return IMG + encodeURIComponent(name) + ".png";
+        return IMG + encodeURIComponent(name) + ".webp?v=" + IMG_VER;
       }
 
       var msgTimer = null;
