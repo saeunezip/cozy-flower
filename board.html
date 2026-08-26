@@ -984,19 +984,38 @@
           mine.sort(function (a, b) {
             return b.v - a.v;
           });
-          // 1~5순위 중에서도 등급이 가장 높은 꽃 하나만 남긴다 — 한 사람이
-          // 목록에 다섯 번씩 겹쳐 나오지 않게, 정말 아쉬운 한 개만 보여준다.
-          var top5 = mine
-            .slice(0, WISH_TOP)
-            .map(function (x) { return snap.flowers[x.i]; })
-            .filter(function (f) { return !WISH_SKIP[f.grade]; }); // UR·UR+ 는 뺀다
-          if (top5.length) {
-            var bestF = top5.reduce(function (a, b) {
-              return ORDER.indexOf(b.grade) < ORDER.indexOf(a.grade) ? b : a;
-            });
-            if (!wishMap[bestF.name])
-              wishMap[bestF.name] = { name: bestF.name, grade: bestF.grade, who: [] };
-            wishMap[bestF.name].who.push(name);
+
+          /*
+           * UR·UR+ 를 몇 개 안 가진 사람("UR 부족자")은 아래 예외에서 그
+           * UR·UR+ 만 따로 챙겨준다 — 이 사람은 거기서 이미 다뤄지므로,
+           * 여기 1~5순위 등급픽까지 더 얹으면 UR 옆에 SSR이 하나 더 붙어
+           * 정작 급한 UR의 존재감이 흐려진다. 그래서 UR 부족자는 건너뛴다.
+           */
+          var urCount = (per["UR"] || 0) + (per["UR+"] || 0);
+          var isUrPoor = urCount > 0 && urCount <= UR_POOR_MAX;
+
+          // 1~5순위 중 가장 높은 등급'만' 남긴다 — 그 등급이 여러 개(동점)면
+          // 전부 남긴다. 한 사람이 다섯 번씩 겹쳐 나오는 것만 줄이는 게 목적이지,
+          // 꼭 하나로 줄이려는 게 아니다.
+          if (!isUrPoor) {
+            var top5 = mine
+              .slice(0, WISH_TOP)
+              .map(function (x) { return snap.flowers[x.i]; })
+              .filter(function (f) { return !WISH_SKIP[f.grade]; }); // UR·UR+ 는 뺀다
+            if (top5.length) {
+              var bestGradeIdx = Math.min.apply(
+                null,
+                top5.map(function (f) { return ORDER.indexOf(f.grade); }),
+              );
+              top5
+                .filter(function (f) { return ORDER.indexOf(f.grade) === bestGradeIdx; })
+                .forEach(function (bestF) {
+                  if (!wishMap[bestF.name])
+                    wishMap[bestF.name] = { name: bestF.name, grade: bestF.grade, who: [] };
+                  if (wishMap[bestF.name].who.indexOf(name) < 0)
+                    wishMap[bestF.name].who.push(name);
+                });
+            }
           }
 
           /*
@@ -1006,8 +1025,7 @@
            * 그래서 이 꽃들은 놓치면 안 된다.
            * 여기 붙는 이름은 '조건에 걸리는 사람' 뿐이다 — 다른 해금자는 넣지 않는다.
            */
-          var urCount = (per["UR"] || 0) + (per["UR+"] || 0);
-          if (urCount > 0 && urCount <= UR_POOR_MAX) {
+          if (isUrPoor) {
             snap.flowers.forEach(function (f, i) {
               if (bits.charAt(i) !== "1" || !WISH_SKIP[f.grade]) return;
               if (!wishMap[f.name])

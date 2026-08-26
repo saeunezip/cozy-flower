@@ -126,7 +126,9 @@
     .preview-toggle { display: flex; align-items: center; gap: 6px; }
     .preview-toggle .toggle-label { font-size: 11px; font-weight: bold; color: #455A64; white-space: nowrap; }
     .preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .preview-slot { position: relative; min-width: 0; border: 1px solid #eceff1; border-radius: 10px; padding: 5px; text-align: center; background: #fafbfc; }
+    .preview-slot { position: relative; min-width: 0; border: 1px solid #eceff1; border-radius: 10px; padding: 5px; text-align: center;
+                     background: #fafbfc; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .preview-slot:active { transform: scale(.96); }
     .preview-slot.mine { border-color: #1F3B73; border-width: 2px; background: #eef2fb; }
     .preview-slot .pimg-wrap { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f0f0f2; margin-bottom: 4px; }
     .preview-slot .pimg-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -284,6 +286,7 @@
             </div>
           </div>
           <div id="previewGrid"><div class="loading">불러오는 중…</div></div>
+          <p class="hint" style="margin-top:8px;">칸을 누르면 비울 수 있습니다</p>
           <a class="preview-link" href="board.html">임무 보드 전체 보기 →</a>
         </div>
       </div>
@@ -404,6 +407,9 @@
     var meName = '';
     try { meName = localStorage.getItem('boardMe') || ''; } catch (e) {}
     var onlyMine = false;
+    // 임무 보드와 같은 관리자 비밀번호를 공유한다 — 미리보기에서 칸을 지울 때만 쓴다.
+    var pw = '';
+    try { pw = localStorage.getItem('boardPw') || ''; } catch (e) {}
 
     var snap = null;          // { members, flowers, unlocked, upgrades }
     var board = {};           // { [slotNo]: {no, flower, grade, member, at} }
@@ -531,7 +537,7 @@
       var html = '<div class="preview-grid">';
       shown.forEach(function (s) {
         var mine = meName && s.member === meName;
-        html += '<div class="preview-slot' + (mine ? ' mine' : '') + '">' +
+        html += '<div class="preview-slot' + (mine ? ' mine' : '') + '" onclick="clearPreviewSlot(' + s.no + ')">' +
                   '<div class="pimg-wrap"><div class="ph">준비중</div>' +
                     '<img loading="lazy" alt="" src="' + imgUrl(s.flower) + '" onerror="this.style.display=\'none\'"></div>' +
                   '<div class="pname">' + esc(s.flower) + '</div>' +
@@ -539,6 +545,37 @@
                 '</div>';
       });
       el.innerHTML = html + '</div>';
+    }
+
+    /* ---------- 미리보기에서 바로 칸 비우기 (임무 보드와 같은 관리자 비밀번호) ---------- */
+    function ensurePw() {
+      if (pw) return true;
+      var v = prompt('관리자 비밀번호를 넣어 주세요. (이 기기에 기억됩니다)');
+      if (!v) return false;
+      pw = v;
+      try { localStorage.setItem('boardPw', v); } catch (e) {}
+      return true;
+    }
+    function clearPreviewSlot(no) {
+      var s = board[String(no)];
+      if (!s) return;
+      if (!confirm(no + '번을 비울까요?\n' + s.flower + (s.member ? ' → ' + s.member : ''))) return;
+      if (!ensurePw()) return;
+      fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clearSlot', pw: pw, no: no })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (!res.ok) throw new Error(res.error || '요청이 거부됐습니다.');
+        delete board[String(no)];
+        renderPreview();
+      }).catch(function (e) {
+        alert(e.message);
+        if (String(e.message).indexOf('비밀번호') >= 0) {
+          pw = '';
+          try { localStorage.removeItem('boardPw'); } catch (e2) {}
+        }
+      });
     }
 
     /* ---------- 통합 검색 ---------- */
