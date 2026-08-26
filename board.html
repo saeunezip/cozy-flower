@@ -483,6 +483,7 @@
         gap: 7px;
       }
       .slot {
+        position: relative;
         border: 1px solid #e3e6ec;
         border-radius: 10px;
         padding: 6px;
@@ -496,6 +497,25 @@
         border-color: #1f3b73;
         border-width: 2px;
         background: #eef2fb;
+      }
+      .slot.done {
+        opacity: 0.5;
+      }
+      .slot .done-check {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #2e7d5b;
+        color: #fff;
+        font-size: 10px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
       }
       .slot .top {
         display: flex;
@@ -700,10 +720,10 @@
         </div>
         <div id="candBox"></div>
         <p class="note">
-          꽃 이름만 넣으면 등급·해금자·개량이 자동으로 붙습니다. 목록에 없는
-          이름이면 21점 미만 임무라 등록하지 않습니다.<br />
+          꽃 이름만 넣으면 등급·해금자·개량이 자동으로 붙습니다.<br />
           번호를 "15, 17"처럼 콤마로 여러 개 넣으면 같은 꽃·같은 사람으로 한
-          번에 등록됩니다.
+          번에 등록됩니다.<br />
+          임무 등록/삭제는 관리자만 가능합니다.
         </p>
       </div>
 
@@ -1667,12 +1687,14 @@
             return (
               '<div class="slot' +
               (mine ? " mine" : "") +
+              (s.done ? " done" : "") +
               '" ' +
               'title="' +
               esc(s.flower) +
               '" onclick="clearSlot(' +
               s.no +
               ')">' +
+              (s.done ? '<div class="done-check">✓</div>' : "") +
               '<div class="top">' +
               '<span class="no">' +
               s.no +

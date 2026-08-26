@@ -121,14 +121,25 @@
     .preview-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .preview-head h3 { margin: 0; font-size: 14px; color: #152C57; white-space: nowrap; }
     .preview-head-left { display: flex; align-items: baseline; gap: 8px; }
-    .count-badge { font-size: 11.5px; font-weight: bold; color: #1F3B73; background: #eef2fb;
-                    padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+    .count-badge { display: none; align-items: center; gap: 5px; font-size: 11.5px; font-weight: bold; color: #1F3B73;
+                    background: #eef2fb; padding: 3px 4px 3px 8px; border-radius: 999px; white-space: nowrap; }
+    .count-badge .count-btn { width: 18px; height: 18px; border-radius: 50%; border: none; background: #fff; color: #1F3B73;
+                                font-size: 12px; font-weight: bold; line-height: 1; cursor: pointer; font-family: inherit;
+                                display: flex; align-items: center; justify-content: center; padding: 0; }
+    .count-badge .count-btn:disabled { opacity: .35; cursor: default; }
     .preview-toggle { display: flex; align-items: center; gap: 6px; }
     .preview-toggle .toggle-label { font-size: 11px; font-weight: bold; color: #455A64; white-space: nowrap; }
     .preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .preview-slot { position: relative; min-width: 0; border: 1px solid #eceff1; border-radius: 10px; padding: 5px; text-align: center;
                      background: #fafbfc; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .preview-slot:active { transform: scale(.96); }
+    .preview-slot.done { opacity: .5; }
+    .preview-slot .done-check { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%;
+                                  background: #2E7D5B; color: #fff; font-size: 12px; font-weight: bold;
+                                  display: flex; align-items: center; justify-content: center; z-index: 1; }
+    .preview-slot .pno { position: absolute; top: 3px; left: 3px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px;
+                          background: rgba(38,50,56,.72); color: #fff; font-size: 10px; font-weight: bold;
+                          display: flex; align-items: center; justify-content: center; gap: 2px; z-index: 1; }
     .preview-slot.mine { border-color: #1F3B73; border-width: 2px; background: #eef2fb; }
     .preview-slot .pimg-wrap { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f0f0f2; margin-bottom: 4px; }
     .preview-slot .pimg-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -286,7 +297,7 @@
             </div>
           </div>
           <div id="previewGrid"><div class="loading">불러오는 중…</div></div>
-          <p class="hint" style="margin-top:8px;">칸을 누르면 비울 수 있습니다</p>
+          <p class="hint" style="margin-top:8px;">칸을 누르면 완료 체크할 수 있습니다</p>
           <a class="preview-link" href="board.html">임무 보드 전체 보기 →</a>
         </div>
       </div>
@@ -402,20 +413,19 @@
     var GRADE_ORDER = { 'UR+':1, 'UR':2, 'SSR':3, 'SR+':4, 'SR':5 };
     var GCLASS = { 'UR+':'ur-plus', 'UR':'ur', 'SSR':'ssr', 'SR+':'sr-plus', 'SR':'sr' };
     var GCOLOR = { 'UR+':'#E6B8AF', 'UR':'#F4CCCC', 'SSR':'#FFF2CC', 'SR+':'#B4A7D6', 'SR':'#D9D2E9' };
+    var ORDER = ['UR+', 'UR', 'SSR', 'SR+', 'SR']; // 앞이 높은 등급 — board.html과 동일
 
     var MAX_COUNT = 24;
     var meName = '';
     try { meName = localStorage.getItem('boardMe') || ''; } catch (e) {}
     var onlyMine = false;
-    // 임무 보드와 같은 관리자 비밀번호를 공유한다 — 미리보기에서 칸을 지울 때만 쓴다.
-    var pw = '';
-    try { pw = localStorage.getItem('boardPw') || ''; } catch (e) {}
 
     var snap = null;          // { members, flowers, unlocked, upgrades }
     var board = {};           // { [slotNo]: {no, flower, grade, member, at} }
     var counts = {};          // { [member]: 임무 횟수 }
     var flowerIndex = null;   // 꽃 이름 -> { i, grade }
     var allMemberData = [], allTaskData = [], gradeOf = {};
+    var bestGradeCache = {};  // 이름 -> 그 사람이 보유한 꽃 중 최고 등급 (board.html의 stats.best와 같은 개념)
 
     function runHomeMode() {
       loadHomeData();
@@ -516,14 +526,54 @@
       var el = document.getElementById('countBadge');
       if (!meName) { el.style.display = 'none'; return; }
       var used = counts[meName] || 0;
-      el.textContent = used + '/' + MAX_COUNT + '회';
-      el.style.display = 'inline-block';
+      var full = used >= MAX_COUNT;
+      el.innerHTML =
+        '<button class="count-btn" onclick="bumpCount(-1)"' + (used <= 0 ? ' disabled' : '') + '>−</button>' +
+        '<span>' + used + '/' + MAX_COUNT + '회</span>' +
+        '<button class="count-btn" onclick="bumpCount(1)"' + (full ? ' disabled' : '') + '>+</button>';
+      el.style.display = 'inline-flex';
+    }
+
+    // 내 임무 횟수는 비밀번호 없이 바로 조절할 수 있다(Worker의 setCount는 누구나 가능).
+    // 연타할 때 요청이 쏟아지지 않도록 board.html과 같은 방식으로 짧게 모았다 보낸다.
+    var countBumpTimer = null, countPending = null;
+    function bumpCount(delta) {
+      if (!meName) { alert('먼저 내 이름을 골라 주세요.'); return; }
+      var cur = countPending !== null ? countPending : (counts[meName] || 0);
+      var next = Math.min(Math.max(cur + delta, 0), MAX_COUNT);
+      countPending = next;
+      counts[meName] = next;
+      renderCountBadge();
+      clearTimeout(countBumpTimer);
+      countBumpTimer = setTimeout(function () {
+        var send = countPending;
+        countPending = null;
+        fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'setCount', member: meName, count: send })
+        }).catch(function () {});
+      }, 700);
     }
 
     /* ---------- 임무 현황 미리보기 ---------- */
     function boardSlotList() {
       return Object.keys(board).map(function (k) { return board[k]; })
         .sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    }
+    // 이 사람이 보유한 꽃 중 최고 등급 — board.html의 stats.best와 같은 개념을
+    // 여기서도 스냅샷(snap.unlocked/snap.flowers)만으로 그대로 계산한다.
+    function bestGradeOf(name) {
+      if (bestGradeCache[name] !== undefined) return bestGradeCache[name];
+      var bits = (snap.unlocked && snap.unlocked[name]) || '';
+      var best = null;
+      for (var i = 0; i < ORDER.length && !best; i++) {
+        for (var j = 0; j < snap.flowers.length; j++) {
+          if (snap.flowers[j].grade === ORDER[i] && bits.charAt(j) === '1') { best = ORDER[i]; break; }
+        }
+      }
+      bestGradeCache[name] = best;
+      return best;
     }
     function renderPreview() {
       var el = document.getElementById('previewGrid');
@@ -537,7 +587,12 @@
       var html = '<div class="preview-grid">';
       shown.forEach(function (s) {
         var mine = meName && s.member === meName;
-        html += '<div class="preview-slot' + (mine ? ' mine' : '') + '" onclick="clearPreviewSlot(' + s.no + ')">' +
+        // 적정 등급 — board.html의 별표와 같은 기준(최고 보유 등급 = 이 임무 등급)
+        var bestGrade = s.member ? bestGradeOf(s.member) : null;
+        var proper = bestGrade && ORDER.indexOf(bestGrade) === ORDER.indexOf(s.grade);
+        html += '<div class="preview-slot' + (mine ? ' mine' : '') + (s.done ? ' done' : '') + '" onclick="toggleDone(' + s.no + ')">' +
+                  '<div class="pno">' + s.no + (proper ? ' <span title="이 사람에게 적정한 등급입니다">⭐</span>' : '') + '</div>' +
+                  (s.done ? '<div class="done-check">✓</div>' : '') +
                   '<div class="pimg-wrap"><div class="ph">준비중</div>' +
                     '<img loading="lazy" alt="" src="' + imgUrl(s.flower) + '" onerror="this.style.display=\'none\'"></div>' +
                   '<div class="pname">' + esc(s.flower) + '</div>' +
@@ -547,34 +602,23 @@
       el.innerHTML = html + '</div>';
     }
 
-    /* ---------- 미리보기에서 바로 칸 비우기 (임무 보드와 같은 관리자 비밀번호) ---------- */
-    function ensurePw() {
-      if (pw) return true;
-      var v = prompt('관리자 비밀번호를 넣어 주세요. (이 기기에 기억됩니다)');
-      if (!v) return false;
-      pw = v;
-      try { localStorage.setItem('boardPw', v); } catch (e) {}
-      return true;
-    }
-    function clearPreviewSlot(no) {
+    /* ---------- 미리보기에서 완료 체크 ----------
+     * 칸을 지우는 게 아니라 완료 표시만 남긴다 — 등록 내용을 지우는 게 아니라서
+     * 관리자 비밀번호 없이 누구나 누를 수 있다. 실제로 칸을 비우려면 임무 보드에서. */
+    function toggleDone(no) {
       var s = board[String(no)];
       if (!s) return;
-      if (!confirm(no + '번을 비울까요?\n' + s.flower + (s.member ? ' → ' + s.member : ''))) return;
-      if (!ensurePw()) return;
+      var next = !s.done;
       fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'clearSlot', pw: pw, no: no })
+        body: JSON.stringify({ action: 'setDone', no: no, done: next })
       }).then(function (r) { return r.json(); }).then(function (res) {
         if (!res.ok) throw new Error(res.error || '요청이 거부됐습니다.');
-        delete board[String(no)];
+        s.done = next;
         renderPreview();
       }).catch(function (e) {
         alert(e.message);
-        if (String(e.message).indexOf('비밀번호') >= 0) {
-          pw = '';
-          try { localStorage.removeItem('boardPw'); } catch (e2) {}
-        }
       });
     }
 
