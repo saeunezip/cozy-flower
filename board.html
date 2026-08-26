@@ -676,12 +676,11 @@
         <h3>임무 등록</h3>
         <div class="row">
           <input
-            type="number"
+            type="text"
+            inputmode="numeric"
             id="slotNo"
-            placeholder="번호"
-            min="1"
-            max="66"
-            style="width: 80px"
+            placeholder="번호 (15, 17)"
+            style="width: 110px"
             onkeydown="if (event.key === 'Enter') lookup();"
           />
           <span class="sug-wrap">
@@ -702,7 +701,9 @@
         <div id="candBox"></div>
         <p class="note">
           꽃 이름만 넣으면 등급·해금자·개량이 자동으로 붙습니다. 목록에 없는
-          이름이면 21점 미만 임무라 등록하지 않습니다.
+          이름이면 21점 미만 임무라 등록하지 않습니다.<br />
+          번호를 "15, 17"처럼 콤마로 여러 개 넣으면 같은 꽃·같은 사람으로 한
+          번에 등록됩니다.
         </p>
       </div>
 
@@ -728,7 +729,10 @@
       <div class="panel">
         <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
           <h3 style="margin: 0;">보드 현황</h3>
-          <button class="btn sm" onclick="openExportModal()">텍스트로 내보내기</button>
+          <div class="row" style="gap: 6px;">
+            <button class="btn sm" onclick="openExportModal()">텍스트로 내보내기</button>
+            <button class="btn sm" style="background: #fdecea; color: #8b1e1e;" onclick="clearAllSlots()">보드 비우기</button>
+          </div>
         </div>
         <div id="grid" class="grid"></div>
         <div id="gridMore"></div>
@@ -980,13 +984,20 @@
           mine.sort(function (a, b) {
             return b.v - a.v;
           });
-          mine.slice(0, WISH_TOP).forEach(function (x) {
-            var f = snap.flowers[x.i];
-            if (WISH_SKIP[f.grade]) return; // UR·UR+ 는 뺀다
-            if (!wishMap[f.name])
-              wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
-            wishMap[f.name].who.push(name);
-          });
+          // 1~5순위 중에서도 등급이 가장 높은 꽃 하나만 남긴다 — 한 사람이
+          // 목록에 다섯 번씩 겹쳐 나오지 않게, 정말 아쉬운 한 개만 보여준다.
+          var top5 = mine
+            .slice(0, WISH_TOP)
+            .map(function (x) { return snap.flowers[x.i]; })
+            .filter(function (f) { return !WISH_SKIP[f.grade]; }); // UR·UR+ 는 뺀다
+          if (top5.length) {
+            var bestF = top5.reduce(function (a, b) {
+              return ORDER.indexOf(b.grade) < ORDER.indexOf(a.grade) ? b : a;
+            });
+            if (!wishMap[bestF.name])
+              wishMap[bestF.name] = { name: bestF.name, grade: bestF.grade, who: [] };
+            wishMap[bestF.name].who.push(name);
+          }
 
           /*
            * 예외 — UR 이상을 몇 개 안 가진 사람의 UR·UR+ 는 도로 넣는다.
@@ -1294,7 +1305,7 @@
 
         html +=
           '<div class="cand unassign" onclick="assign(\'\')">' +
-          '<div class="who"><b>지정 안함</b>' +
+          '<div class="who"><b>자유 배정</b>' +
           '<div class="meta">이름 없이 이 임무만 먼저 등록합니다</div></div>' +
           "</div>";
 
@@ -1418,40 +1429,48 @@
         if (c) assign(c.name);
       }
 
+      // "15, 17" 이나 "15 17" 처럼 여러 개를 한 번에 등록할 수 있게 콤마/공백으로 나눠 읽는다.
+      function parseSlotNumbers(raw) {
+        var seen = {};
+        return String(raw || "")
+          .split(/[,\s]+/)
+          .map(function (s) { return parseInt(s, 10); })
+          .filter(function (n) {
+            if (!(n >= 1 && n <= 66) || seen[n]) return false;
+            seen[n] = true;
+            return true;
+          });
+      }
+
       function assign(name) {
         if (!current) return;
         // 번호는 후보를 볼 때가 아니라 실제로 등록하는 이 시점에 확인한다.
-        var no = parseInt(document.getElementById("slotNo").value, 10);
-        if (!(no >= 1 && no <= 66)) {
-          say("임무 번호를 1~66 사이로 넣어 주세요.", true);
+        var nos = parseSlotNumbers(document.getElementById("slotNo").value);
+        if (!nos.length) {
+          say("임무 번호를 1~66 사이로 넣어 주세요. 여러 개면 '15, 17'처럼 콤마로 구분합니다.", true);
           document.getElementById("slotNo").focus();
           return;
         }
         if (!ensurePw()) return;
-        var prev = board[String(no)];
-        if (
-          prev &&
-          !confirm(
-            no +
-              "번에 이미 있습니다: " +
-              prev.flower +
-              (prev.member ? " → " + prev.member : "") +
-              "\n\n덮어쓸까요?",
-          )
-        )
+
+        var conflicts = nos
+          .filter(function (no) { return board[String(no)]; })
+          .map(function (no) {
+            var prev = board[String(no)];
+            return no + "번(" + prev.flower + (prev.member ? " → " + prev.member : "") + ")";
+          });
+        if (conflicts.length && !confirm("이미 있는 칸이 있습니다: " + conflicts.join(", ") + "\n\n덮어쓸까요?"))
           return;
+
         var flower = current.flower,
           grade = current.grade;
-        api({
-          action: "assign",
-          pw: pw,
-          no: no,
-          flower: flower,
-          grade: grade,
-          member: name,
-        })
+        Promise.all(
+          nos.map(function (no) {
+            return api({ action: "assign", pw: pw, no: no, flower: flower, grade: grade, member: name });
+          }),
+        )
           .then(function () {
-            say(no + "번 · " + flower + (name ? " → " + name : ""));
+            say(nos.map(function (n) { return n + "번"; }).join(", ") + " · " + flower + (name ? " → " + name : ""));
             document.getElementById("slotNo").value = "";
             document.getElementById("flowerName").value = "";
             document.getElementById("candBox").innerHTML = "";
@@ -1687,7 +1706,7 @@
         var minSlot = {}; // 이름 -> 그 사람의 가장 작은 슬롯 번호
 
         slotList().forEach(function (s) {
-          var who = s.member || "미지정";
+          var who = s.member || "자유 배정";
           if (!groups[who]) groups[who] = {};
           if (!groups[who][s.flower]) groups[who][s.flower] = [];
           groups[who][s.flower].push(s.no);
@@ -1770,6 +1789,36 @@
           })
           .catch(function (e) {
             say(e.message, true);
+          });
+      }
+
+      // 임무 횟수(counts)는 그대로 두고 보드 칸만 전부 비운다 — 새 길드전
+      // 초기화(action:"reset")와 달리 여기서는 등록된 칸만 하나씩 지운다.
+      function clearAllSlots() {
+        var nos = Object.keys(board);
+        if (!nos.length) {
+          say("이미 비어 있습니다.");
+          return;
+        }
+        if (!confirm("보드를 전부 비웁니다. 되돌릴 수 없어요. 계속할까요?")) return;
+        if (!ensurePw()) return;
+        Promise.all(
+          nos.map(function (no) {
+            return api({ action: "clearSlot", pw: pw, no: parseInt(no, 10) });
+          }),
+        )
+          .then(function () {
+            say("보드를 전부 비웠습니다.");
+            return reload();
+          })
+          .catch(function (e) {
+            say(e.message, true);
+            if (e.message.indexOf("비밀번호") >= 0) {
+              pw = "";
+              try {
+                localStorage.removeItem("boardPw");
+              } catch (e2) {}
+            }
           });
       }
 

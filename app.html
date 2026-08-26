@@ -354,16 +354,6 @@
     var IMG = API + '/icon/';
     var IMG_VER = '1';
 
-    var pageParam = new URLSearchParams(location.search).get('page');
-
-    if (pageParam === 'register' || pageParam === 'admin') {
-      document.body.classList.add('mode-wrap');
-      runWrapMode();
-    } else {
-      document.body.classList.add('mode-home');
-      runHomeMode();
-    }
-
     /* ===================================================================
        등록/관리자 모드 — 예전 app.html 그대로. Apps Script 화면을 iframe으로
        감싸서 구글 안내 배너를 가린다.
@@ -537,7 +527,7 @@
       var list = onlyMine ? all.filter(function (s) { return meName && s.member === meName; }) : all;
       if (!list.length) { el.innerHTML = '<div class="preview-empty">배정된 임무가 없어요</div>'; return; }
 
-      var shown = list.slice(0, 8);
+      var shown = list.slice(0, 16);
       var html = '<div class="preview-grid">';
       shown.forEach(function (s) {
         var mine = meName && s.member === meName;
@@ -832,6 +822,23 @@
           return (ga !== gb) ? ga - gb : String(a[0]).localeCompare(String(b[0]));
         });
       renderTaskData(list);
+    }
+
+    /* ===================================================================
+       실행 시작점 — 모든 변수 초기화(meName 등)와 함수 정의가 끝난 뒤에
+       와야 한다. 예전엔 이 분기가 파일 위쪽(변수 선언보다 먼저)에 있어서,
+       홈 모드 진입 시 meName이 아직 초기화 전(undefined)인 채로 헤더 pill을
+       그려버리는 버그가 있었다 — var는 선언만 호이스팅되고 대입은 실행 순서를
+       따르기 때문. 그래서 분기 코드를 맨 끝으로 옮겼다.
+       =================================================================== */
+    var pageParam = new URLSearchParams(location.search).get('page');
+
+    if (pageParam === 'register' || pageParam === 'admin') {
+      document.body.classList.add('mode-wrap');
+      runWrapMode();
+    } else {
+      document.body.classList.add('mode-home');
+      runHomeMode();
     }
   </script>
 </body>
