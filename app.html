@@ -10,7 +10,7 @@
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="길드전 계산기">
   <meta property="og:title"       content="길드전 계산기">
-  <meta property="og:description" content="더 코지 플로리스트 · 꽃 해금 현황과 추천 임무를 한눈에">
+  <meta property="og:description" content="더 코지 플로리스트 · 꽃 보유 현황과 추천 임무를 한눈에">
   <meta property="og:url"         content="https://saeunezip.github.io/cozy-flower/app.html">
   <meta property="og:image"       content="https://saeunezip.github.io/cozy-flower/preview.png">
   <meta property="og:image:width"  content="1200">
@@ -18,42 +18,359 @@
   <meta name="twitter:card"  content="summary_large_image">
   <meta name="twitter:title" content="길드전 계산기">
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f7f7f8; }
-    #wrap { position: fixed; inset: 0; overflow: hidden; }
+    /* 헤더의 "백야" 글자 전용 — "백야" 두 글자만 담아서 1KB대로 줄인 서브셋 폰트 */
+    @font-face {
+      font-family: 'HeirofLight';
+      src: url('fonts/HeirofLight.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #f7f7f8; }
+    body { font-family: 'Malgun Gothic', sans-serif; color: #263238; }
+
+    /* =========================================================
+       등록/관리자 모드 — 기존 Apps Script 화면을 iframe으로 감싸는 부분.
+       ?page=register / ?page=admin 일 때만 씀. 그 외엔 완전히 숨김.
+       ========================================================= */
+    body.mode-wrap, body.mode-wrap html { height: 100%; overflow: hidden; }
+    #wrap { display: none; }
+    body.mode-wrap #wrap { position: fixed; inset: 0; overflow: hidden; display: block; }
     #app  { position: absolute; left: 0; width: 100%; border: 0; display: block; }
 
     #warn { position: fixed; left: 0; right: 0; bottom: 0; background: #263238; color: #fff;
-            font-family: 'Malgun Gothic', sans-serif; font-size: 13px; padding: 13px 14px;
-            display: none; z-index: 10; line-height: 1.7; }
+            font-size: 13px; padding: 13px 14px; display: none; z-index: 10; line-height: 1.7; }
     #warn a { color: #8FD0FF; font-weight: bold; }
+
+    /* =========================================================
+       홈 모드 — 새 정적 메인화면. 시트/Apps Script를 전혀 거치지 않고
+       Worker(guild-flower-worker)에서 직접 데이터를 받아온다.
+       ========================================================= */
+    #home { display: none; }
+    body.mode-home #home { display: block; }
+    .container { max-width: 640px; margin: auto; padding: 16px 12px 48px; }
+
+    /* ---- 상단 카드: 로고/길드명 + 내 이름 pill + 검색 ---- */
+    .top-card { background: #22195A; border-radius: 18px; padding: 14px 14px 16px; margin-bottom: 16px; }
+    .top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .app-logo { width: 34px; height: 34px; flex: none; }
+    .app-title { color: #fff; margin: 0; font-size: 20px; white-space: nowrap; font-family: 'HeirofLight', 'Malgun Gothic', sans-serif; font-weight: normal; letter-spacing: .5px; }
+
+    .me-pill-wrap { position: relative; flex: none; }
+    .me-pill { background: rgba(255,255,255,.16); color: #fff; border: none; padding: 7px 14px; border-radius: 999px;
+               font-size: 13px; font-weight: bold; font-family: inherit; cursor: pointer; max-width: 96px;
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .me-pill:hover { background: rgba(255,255,255,.24); }
+    .me-menu { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border-radius: 12px;
+               box-shadow: 0 8px 24px rgba(0,0,0,.25); min-width: 150px; max-height: 280px; overflow-y: auto;
+               z-index: 70; display: none; padding: 4px; }
+    .me-menu.show { display: block; }
+    .me-menu-item { padding: 9px 12px; font-size: 13.5px; border-radius: 8px; cursor: pointer; color: #263238; }
+    .me-menu-item:hover { background: #f0f2f5; }
+    .me-menu-item.active { background: #eef2fb; color: #1F3B73; font-weight: bold; }
+
+    /* ---- 통합 검색 ---- */
+    .search-wrap { position: relative; }
+    .search-wrap input { width: 100%; padding: 12px 14px 12px 40px; border: none; border-radius: 11px;
+                          font-size: 15px; outline: none; background: #fff; }
+    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #90a4ae; pointer-events: none; }
+    .search-icon svg { width: 17px; height: 17px; display: block; }
+    .search-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: #fff;
+                        border-radius: 11px; box-shadow: 0 6px 20px rgba(0,0,0,.2); overflow: hidden;
+                        z-index: 60; display: none; max-height: 300px; overflow-y: auto; }
+    .search-dropdown.show { display: block; }
+    .search-group-label { padding: 8px 14px 4px; font-size: 11px; font-weight: bold; color: #90a4ae; }
+    .search-item { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+    .search-item:hover { background: #f0f2f5; }
+    .search-item-flower { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .search-item-flower:hover { background: #f0f2f5; }
+    .search-item-name { cursor: pointer; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search-add-link { flex: none; font-size: 11px; font-weight: bold; color: #fff; background: #6B4F8F;
+                        padding: 5px 9px; border-radius: 7px; text-decoration: none; white-space: nowrap; }
+    .search-add-link:hover { filter: brightness(.94); }
+    .search-empty { padding: 14px; font-size: 13px; color: #90a4ae; text-align: center; }
+
+    /* ---- 바로가기 2x2 그리드 (흰 카드로 통일) ---- */
+    .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .shortcut-tile { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px;
+                      background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-decoration: none;
+                      color: #152C57; font-weight: bold; font-size: 13.5px; border: none; cursor: pointer;
+                      font-family: inherit; -webkit-tap-highlight-color: transparent; }
+    .shortcut-tile:active { transform: scale(.97); }
+    .icon-badge { width: 34px; height: 34px; border-radius: 10px; background: #E8ECF5; flex: none;
+                  display: flex; align-items: center; justify-content: center; }
+    .icon-badge svg { width: 18px; height: 18px; color: #1F3B73; display: block; }
+    .icon-badge img { width: 20px; height: 20px; display: block; }
+
+    /* ---- 내 임무만 보기 (임무 현황 헤더 오른쪽) ---- */
+    .toggle-switch { position: relative; width: 40px; height: 23px; flex: none; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; inset: 0; background: #cfd4dc; border-radius: 999px; cursor: pointer; transition: background .15s; }
+    .toggle-track::before { content: ''; position: absolute; width: 17px; height: 17px; left: 3px; top: 3px;
+                             background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .toggle-switch input:checked + .toggle-track { background: #1F3B73; }
+    .toggle-switch input:checked + .toggle-track::before { transform: translateX(17px); }
+    .toggle-switch.sm { width: 30px; height: 17px; }
+    .toggle-switch.sm .toggle-track::before { width: 11px; height: 11px; left: 3px; top: 3px; }
+    .toggle-switch.sm input:checked + .toggle-track::before { transform: translateX(13px); }
+
+    /* ---- 임무 현황 미리보기 ---- */
+    .preview-section { background: #fff; border-radius: 12px; padding: 13px; box-shadow: 0 2px 6px rgba(0,0,0,.05); margin-bottom: 10px; }
+    .preview-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .preview-head h3 { margin: 0; font-size: 14px; color: #152C57; white-space: nowrap; }
+    .preview-head-left { display: flex; align-items: baseline; gap: 8px; }
+    .count-badge { font-size: 11.5px; font-weight: bold; color: #1F3B73; background: #eef2fb;
+                    padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+    .preview-toggle { display: flex; align-items: center; gap: 6px; }
+    .preview-toggle .toggle-label { font-size: 11px; font-weight: bold; color: #455A64; white-space: nowrap; }
+    .preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .preview-slot { position: relative; min-width: 0; border: 1px solid #eceff1; border-radius: 10px; padding: 5px; text-align: center; background: #fafbfc; }
+    .preview-slot.mine { border-color: #1F3B73; border-width: 2px; background: #eef2fb; }
+    .preview-slot .pimg-wrap { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f0f0f2; margin-bottom: 4px; }
+    .preview-slot .pimg-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .preview-slot .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #b0bec5; }
+    .preview-slot .pname { font-size: 11px; font-weight: bold; color: #263238; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-slot .pmember { font-size: 10px; color: #1F3B73; font-weight: bold; }
+    .preview-empty { text-align: center; color: #90a4ae; font-size: 13px; padding: 22px 0; }
+    .preview-link { display: block; text-align: center; font-size: 13px; color: #6B4F8F; font-weight: bold;
+                     text-decoration: none; margin-top: 10px; }
+    .preview-link:hover { text-decoration: underline; }
+
+    .hint { text-align: center; font-size: 12px; color: #90a4ae; margin: 0 0 10px; }
+    .loading { text-align: center; color: #90a4ae; font-size: 14px; margin: 30px 0; }
+    .error-msg { color: #b71c1c; font-weight: bold; font-size: 14px; background: #ffebee; padding: 15px; border-radius: 10px; white-space: pre-wrap; line-height: 1.6; }
+    .retry-btn { background: #1F3B73; color: #fff; border: none; padding: 9px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-family: inherit; }
+
+    /* ---- "임무 추천 순위" 전체화면 뷰 (Index.html 이식) ---- */
+    #recoView { display: none; }
+    #recoView.show { display: block; }
+    #homeView.hide { display: none; }
+    .reco-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .back-btn { background: #e8ebf2; color: #1F3B73; border: none; padding: 9px 13px; border-radius: 9px;
+                font-weight: bold; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .back-btn:hover { filter: brightness(.96); }
+    .reco-title { color: #152C57; margin: 0; font-size: 18px; }
+
+    .tab-menu { display: flex; background: #fff; border-radius: 11px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.06); margin-bottom: 12px; }
+    .tab-btn { flex: 1; padding: 13px 6px; border: none; background: transparent; font-size: 15px; font-weight: bold; color: #90a4ae; cursor: pointer; font-family: inherit; }
+    .tab-btn.active { background: #1F3B73; color: #fff; }
+    .tab-content { display: none; } .tab-content.active { display: block; }
+
+    .tools { background: #fff; border-radius: 12px; padding: 11px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.05); display: flex; gap: 8px; flex-wrap: wrap; }
+    .tools input { flex: 1 1 180px; padding: 10px 12px; border: 1px solid #dfe3e6; border-radius: 8px; font-size: 15px; outline: none; font-family: inherit; }
+    .tools input:focus { border-color: #1F3B73; }
+    .tools select { padding: 10px; border: 1px solid #dfe3e6; border-radius: 8px; font-size: 14px; font-weight: bold; color: #37474F; background: #fff; outline: none; cursor: pointer; font-family: inherit; }
+
+    .mrow { background: #fff; border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .mhead { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; }
+    .mname { font-size: 14px; font-weight: bold; color: #152C57; cursor: pointer; }
+    .mname:hover { text-decoration: underline; }
+    .munlock { font-size: 12px; color: #90a4ae; }
+    .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+    .slot { position: relative; aspect-ratio: 1/1; border-radius: 9px; overflow: hidden; background: #f0f0f2; border: 3px solid #eceff1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .slot:active { transform: scale(.96); }
+    .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slot.empty { background: #fafafa; border-style: dashed; cursor: default; }
+    .slot .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #b0bec5; text-align: center; line-height: 1.2; padding: 2px; }
+    .num { position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: rgba(38,50,56,.72); color: #fff; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    .plus { position: absolute; bottom: 2px; right: 2px; background: #8E24AA; color: #fff; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; }
+
+    .b-ur-plus { border-color: #C62828; } .b-ur { border-color: #F4CCCC; }
+    .b-ssr { border-color: #FFF2CC; } .b-sr-plus { border-color: #B4A7D6; }
+    .b-sr { border-color: #D5D5D5; } .b-none { border-color: #ECEFF1; }
+
+    .trow { background: #fff; border-radius: 12px; padding: 10px 11px; margin-bottom: 7px; box-shadow: 0 1px 3px rgba(0,0,0,.06); display: flex; gap: 11px; align-items: center; }
+    .ticon { flex: none; width: 54px; height: 54px; border-radius: 9px; overflow: hidden; background: #f0f0f2; border: 3px solid #eceff1; position: relative; }
+    .ticon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ticon .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #b0bec5; }
+    .tbody { flex: 1; min-width: 0; }
+    .tname { font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tname-link { cursor: pointer; }
+    .tname-link:hover { text-decoration: underline; }
+    .badge { padding: 2px 7px; border-radius: 5px; color: #3E2723; font-size: 11px; font-weight: bold; }
+    .badge.ur-plus { background: #E6B8AF; } .badge.ur { background: #F4CCCC; }
+    .badge.ssr { background: #FFF2CC; } .badge.sr-plus { background: #B4A7D6; }
+    .badge.sr { background: #D9D2E9; } .badge.none { background: #E0E0E0; }
+    .tmeta { font-size: 12px; color: #90a4ae; margin-top: 2px; }
+    .tmembers { font-size: 12.5px; color: #455A64; margin-top: 5px; line-height: 1.7; }
+    .tmembers span { display: inline-block; white-space: nowrap; margin-right: 9px; }
+    .tmembers b { color: #1F3B73; }
+
+    #tip { position: fixed; z-index: 999; display: none; background: rgba(38,50,56,.95); color: #fff; padding: 7px 11px; border-radius: 8px; font-size: 13px; font-weight: bold; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: 240px; line-height: 1.4; }
+    #tip .tg { display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 11px; margin-right: 5px; color: #3E2723; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(21,44,87,.55); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 12px; }
+    .modal-overlay.show { display: flex; }
+    .modal-box { background: #fff; border-radius: 14px; max-width: 560px; width: 100%; max-height: 78vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #eceff1; flex: none; }
+    .modal-title { font-size: 15px; font-weight: bold; color: #152C57; }
+    .modal-close { background: none; border: none; font-size: 20px; color: #90a4ae; cursor: pointer; line-height: 1; padding: 4px; }
+    .modal-body { padding: 14px 10px; overflow-y: auto; }
+    .modal-loading { text-align: center; color: #90a4ae; padding: 30px 0; font-size: 14px; }
+    .mflower-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .mflower-grid .ticon { width: 100%; height: auto; aspect-ratio: 1/1; border: none; }
+    .mholder-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mholder-chip { background: #f0f2f5; color: #263238; font-size: 13px; font-weight: bold; padding: 6px 11px; border-radius: 20px; }
   </style>
 </head>
 <body>
+  <!-- ===== 등록/관리자 모드: iframe 감싸기 ===== -->
   <div id="wrap"><iframe id="app" title="길드전 계산기"></iframe></div>
-
   <div id="warn">
     화면이 안 뜨나요? 브라우저가 이 방식을 막고 있을 수 있습니다.<br>
     <a id="direct" href="#" target="_blank">원래 주소로 열기</a>
   </div>
 
+  <!-- ===== 홈 모드: 새 정적 메인화면 ===== -->
+  <div id="home">
+    <div class="container">
+
+      <div id="homeView">
+        <div class="top-card">
+          <div class="top-row">
+            <div class="brand">
+              <img class="app-logo" src="logo.png" alt="">
+              <h1 class="app-title">백야</h1>
+            </div>
+            <div class="me-pill-wrap">
+              <button type="button" class="me-pill" id="mePillBtn" onclick="toggleMeMenu()">이름 선택</button>
+              <div class="me-menu" id="meMenu"></div>
+            </div>
+          </div>
+
+          <div class="search-wrap">
+            <span class="search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input type="text" id="searchInput" placeholder="길드원 이름 또는 꽃 이름 검색" oninput="onSearchInput()" onfocus="onSearchInput()">
+            <div class="search-dropdown" id="searchDropdown"></div>
+          </div>
+        </div>
+
+        <div class="shortcut-grid">
+          <button type="button" class="shortcut-tile" onclick="showReco()">
+            <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg></span>
+            임무 추천 순위
+          </button>
+          <a class="shortcut-tile" href="app.html?page=register">
+            <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="12" r="2.2"/></svg></span>
+            내 꽃 등록
+          </a>
+          <a class="shortcut-tile" href="board.html">
+            <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
+            임무 보드
+          </a>
+          <a class="shortcut-tile" href="https://cozytools.pages.dev/" target="_blank" rel="noopener noreferrer">
+            <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+            cozytools
+          </a>
+        </div>
+
+        <div class="preview-section">
+          <div class="preview-head">
+            <div class="preview-head-left">
+              <h3>임무 현황</h3>
+              <span class="count-badge" id="countBadge" style="display:none;"></span>
+            </div>
+            <div class="preview-toggle">
+              <span class="toggle-label">내 임무만 보기</span>
+              <label class="toggle-switch sm">
+                <input type="checkbox" id="onlyMineToggle" onchange="onToggleMine()">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+          <div id="previewGrid"><div class="loading">불러오는 중…</div></div>
+          <a class="preview-link" href="board.html">임무 보드 전체 보기 →</a>
+        </div>
+      </div>
+
+      <div id="recoView">
+        <div class="reco-head">
+          <button type="button" class="back-btn" onclick="showHome()">&larr; 뒤로</button>
+          <h2 class="reco-title">임무 추천 순위</h2>
+        </div>
+
+        <p class="hint" id="freshNote" style="display:none;"></p>
+
+        <div class="tab-menu">
+          <button class="tab-btn active" onclick="switchTab('memberTab', this)">길드원별 임무</button>
+          <button class="tab-btn" onclick="switchTab('taskTab', this)">임무별 추천</button>
+        </div>
+
+        <div id="memberTab" class="tab-content active">
+          <div class="tools">
+            <input type="text" id="memberSearchInput" placeholder="길드원 이름 검색" oninput="filterData()">
+          </div>
+          <p class="hint">이름을 누르면 보유 현황 · 꽃 아이콘을 누르면 이름이 나옵니다</p>
+          <div id="memberResult"><div class="loading">데이터를 불러오는 중…</div></div>
+        </div>
+
+        <div id="taskTab" class="tab-content">
+          <div class="tools">
+            <select id="gradeFilter" onchange="filterTaskData()">
+              <option value="all">전체 등급</option>
+              <option value="UR+">UR+</option><option value="UR">UR</option>
+              <option value="SSR">SSR</option><option value="SR+">SR+</option><option value="SR">SR</option>
+            </select>
+            <input type="text" id="taskSearchInput" placeholder="꽃 이름 검색" oninput="filterTaskData()">
+          </div>
+          <p class="hint">꽃 이름을 누르면 보유 중인 길드원을 모두 볼 수 있습니다</p>
+          <div id="taskResult"><div class="loading">데이터를 불러오는 중…</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="tip"></div>
+
+    <div id="modalOverlay" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="modal-title" id="modalTitle"></span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ===================================================================
-       배포된 웹앱 주소. 재배포해도 이 주소는 바뀌지 않습니다.
-       ('새 배포'를 만들면 주소가 바뀌니 그때만 여기를 고치세요)
+       배포된 웹앱 주소 (등록/관리자 모드에서만 씀). 재배포해도 이 주소는
+       바뀌지 않습니다. ('새 배포'를 만들면 주소가 바뀌니 그때만 여기를 고치세요)
        =================================================================== */
     var APP_URL = 'https://script.google.com/macros/s/AKfycbztf1sGbFAjXoha9Q6jG9AstztTfdjNGkVQ85cRSUXFEU-1RVreRMd-t26XKXtSfEGW/exec';
 
-    /* 구글 안내 배너를 가릴 높이(px).
-       파일을 다시 올리지 않고도 주소 뒤에 ?crop=46 을 붙여서 바로 시험할 수 있습니다.
-       예)  .../app.html?crop=46
-       마음에 드는 값을 찾으면 아래 숫자만 그 값으로 바꿔서 다시 올리세요.       */
+    /* 구글 안내 배너를 가릴 높이(px). 주소 뒤에 ?crop=46 을 붙여서 바로 시험할 수 있습니다. */
     var CROP_PX = 0;
 
-    (function () {
+    /* 임무 보드 Worker — 메인화면 데이터(검색·미리보기·추천 순위·이미지)를 전부 여기서 직접 받는다.
+       Apps Script를 거치지 않으므로 구글 쪽 고정 지연이 없다. */
+    var API = 'https://guild-flower-worker.saeunezip.workers.dev';
+    var IMG = API + '/icon/';
+    var IMG_VER = '1';
+
+    var pageParam = new URLSearchParams(location.search).get('page');
+
+    if (pageParam === 'register' || pageParam === 'admin') {
+      document.body.classList.add('mode-wrap');
+      runWrapMode();
+    } else {
+      document.body.classList.add('mode-home');
+      runHomeMode();
+    }
+
+    /* ===================================================================
+       등록/관리자 모드 — 예전 app.html 그대로. Apps Script 화면을 iframe으로
+       감싸서 구글 안내 배너를 가린다.
+       =================================================================== */
+    function runWrapMode() {
       var params = new URLSearchParams(location.search);
 
-      // crop 은 이 감싸기 페이지 전용이라 앱으로 넘기지 않습니다.
-      // 페이지를 오가도 시험하던 값이 유지되도록 잠깐 기억해 둡니다.
       try {
         var saved = sessionStorage.getItem('cropPx');
         if (saved !== null) CROP_PX = parseInt(saved, 10) || 0;
@@ -69,7 +386,6 @@
       }
 
       // 앱이 '감싸기 안에서 열렸다'는 것을 알 수 있게 표시를 붙입니다.
-      // 이게 있어야 페이지를 오갈 때 감싸기가 풀리지 않습니다.
       params.set('wrap', '1');
 
       var src = APP_URL + '?' + params.toString();
@@ -85,7 +401,438 @@
       setTimeout(function () {
         if (!loaded) document.getElementById('warn').style.display = 'block';
       }, 7000);
-    })();
+    }
+
+    /* ===================================================================
+       홈 모드 — 새 정적 메인화면
+       =================================================================== */
+    var GRADE_ORDER = { 'UR+':1, 'UR':2, 'SSR':3, 'SR+':4, 'SR':5 };
+    var GCLASS = { 'UR+':'ur-plus', 'UR':'ur', 'SSR':'ssr', 'SR+':'sr-plus', 'SR':'sr' };
+    var GCOLOR = { 'UR+':'#E6B8AF', 'UR':'#F4CCCC', 'SSR':'#FFF2CC', 'SR+':'#B4A7D6', 'SR':'#D9D2E9' };
+
+    var MAX_COUNT = 24;
+    var meName = '';
+    try { meName = localStorage.getItem('boardMe') || ''; } catch (e) {}
+    var onlyMine = false;
+
+    var snap = null;          // { members, flowers, unlocked, upgrades }
+    var board = {};           // { [slotNo]: {no, flower, grade, member, at} }
+    var counts = {};          // { [member]: 임무 횟수 }
+    var flowerIndex = null;   // 꽃 이름 -> { i, grade }
+    var allMemberData = [], allTaskData = [], gradeOf = {};
+
+    function runHomeMode() {
+      loadHomeData();
+      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      document.addEventListener('click', function (ev) {
+        if (!ev.target.closest('.search-wrap')) hideSearchDropdown();
+        if (!ev.target.closest('.me-pill-wrap')) hideMeMenu();
+      });
+    }
+
+    function loadHomeData() {
+      Promise.all([
+        fetch(API + '/', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+        fetch(API + '/index', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      ]).then(function (results) {
+        var boardRes = results[0], indexRes = results[1];
+        if (!boardRes || !boardRes.ok || !boardRes.snapshot) throw new Error('임무 보드 데이터를 받지 못했습니다.');
+
+        snap   = boardRes.snapshot;
+        board  = boardRes.board || {};
+        counts = boardRes.counts || {};
+        flowerIndex = {};
+        (snap.flowers || []).forEach(function (f, i) { flowerIndex[f.name] = { i: i, grade: f.grade }; });
+
+        renderMeMenu();
+        renderCountBadge();
+        renderPreview();
+
+        var idxSnap = indexRes && indexRes.ok && indexRes.snapshot;
+        if (idxSnap && Array.isArray(idxSnap.guild) && Array.isArray(idxSnap.task)) {
+          allMemberData = idxSnap.guild;
+          allTaskData   = idxSnap.task;
+          allTaskData.forEach(function (r) { if (r[0]) gradeOf[String(r[0]).trim()] = String(r[1]).trim(); });
+          filterTaskData();
+          renderMemberData(allMemberData);
+          if (idxSnap.builtAt) {
+            try {
+              var t = new Date(idxSnap.builtAt).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' });
+              var note = document.getElementById('freshNote');
+              note.textContent = t + ' 기준 · 방금 저장한 내용이라면 잠시 후 새로고침해 보세요';
+              note.style.display = 'block';
+            } catch (e) {}
+          }
+        } else {
+          var msg = '<div class="error-msg">아직 추천 데이터가 없습니다.</div>';
+          document.getElementById('memberResult').innerHTML = msg;
+          document.getElementById('taskResult').innerHTML = msg;
+        }
+      }).catch(function (e) {
+        document.getElementById('previewGrid').innerHTML =
+          '<div class="error-msg">불러오지 못했습니다.\n' + (e && e.message ? e.message : e) +
+          '<br><button class="retry-btn" onclick="location.reload()">새로고침</button></div>';
+      });
+    }
+
+    /* ---------- 길드원 선택 (헤더 pill) / 내 임무만 보기 ----------
+     * 이름이 4자 이상이면 pill에는 앞 3자 + "..."로 줄여 보여준다. 목록(me-menu)은
+     * 항상 전체 이름으로 보여줘서, 줄임 표시 때문에 헷갈리는 일이 없게 한다. */
+    function truncateName(name) {
+      if (!name) return '이름 선택';
+      return name.length >= 4 ? name.slice(0, 3) + '...' : name;
+    }
+    function renderMeMenu() {
+      var menu = document.getElementById('meMenu');
+      var members = snap.members || [];
+      menu.innerHTML = members.map(function (n) {
+        return '<div class="me-menu-item' + (n === meName ? ' active' : '') + '" onclick="pickMe(\'' + escAttr(n) + '\')">' + esc(n) + '</div>';
+      }).join('');
+    }
+    function toggleMeMenu() {
+      document.getElementById('meMenu').classList.toggle('show');
+    }
+    function hideMeMenu() {
+      document.getElementById('meMenu').classList.remove('show');
+    }
+    function pickMe(name) {
+      meName = name;
+      try { localStorage.setItem('boardMe', meName); } catch (e) {}
+      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      hideMeMenu();
+      renderMeMenu();
+      renderCountBadge();
+      renderPreview();
+    }
+    function onToggleMine() {
+      var box = document.getElementById('onlyMineToggle');
+      if (box.checked && !meName) {
+        alert('먼저 내 이름을 골라 주세요.');
+        box.checked = false;
+        return;
+      }
+      onlyMine = box.checked;
+      renderPreview();
+    }
+
+    /* ---------- 임무 횟수 배지 ---------- */
+    function renderCountBadge() {
+      var el = document.getElementById('countBadge');
+      if (!meName) { el.style.display = 'none'; return; }
+      var used = counts[meName] || 0;
+      el.textContent = used + '/' + MAX_COUNT + '회';
+      el.style.display = 'inline-block';
+    }
+
+    /* ---------- 임무 현황 미리보기 ---------- */
+    function boardSlotList() {
+      return Object.keys(board).map(function (k) { return board[k]; })
+        .sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    }
+    function renderPreview() {
+      var el = document.getElementById('previewGrid');
+      var all = boardSlotList();
+      if (!all.length) { el.innerHTML = '<div class="preview-empty">아직 등록된 임무가 없어요</div>'; return; }
+
+      var list = onlyMine ? all.filter(function (s) { return meName && s.member === meName; }) : all;
+      if (!list.length) { el.innerHTML = '<div class="preview-empty">배정된 임무가 없어요</div>'; return; }
+
+      var shown = list.slice(0, 8);
+      var html = '<div class="preview-grid">';
+      shown.forEach(function (s) {
+        var mine = meName && s.member === meName;
+        html += '<div class="preview-slot' + (mine ? ' mine' : '') + '">' +
+                  '<div class="pimg-wrap"><div class="ph">준비중</div>' +
+                    '<img loading="lazy" alt="" src="' + imgUrl(s.flower) + '" onerror="this.style.display=\'none\'"></div>' +
+                  '<div class="pname">' + esc(s.flower) + '</div>' +
+                  (s.member ? '<div class="pmember">' + esc(s.member) + '</div>' : '') +
+                '</div>';
+      });
+      el.innerHTML = html + '</div>';
+    }
+
+    /* ---------- 통합 검색 ---------- */
+    function onSearchInput() {
+      var q = document.getElementById('searchInput').value.trim().toLowerCase();
+      var dd = document.getElementById('searchDropdown');
+      if (!q || !snap) { dd.classList.remove('show'); return; }
+
+      var members = (snap.members || []).filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; }).slice(0, 6);
+      var flowers = (snap.flowers || []).map(function (f) { return f.name; })
+        .filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; }).slice(0, 6);
+
+      if (!members.length && !flowers.length) {
+        dd.innerHTML = '<div class="search-empty">검색 결과가 없습니다</div>';
+        dd.classList.add('show');
+        return;
+      }
+
+      var html = '';
+      if (members.length) {
+        html += '<div class="search-group-label">길드원</div>';
+        members.forEach(function (n) {
+          html += '<div class="search-item" onclick="searchPickMember(\'' + escAttr(n) + '\')">' + esc(n) + '</div>';
+        });
+      }
+      if (flowers.length) {
+        html += '<div class="search-group-label">꽃</div>';
+        flowers.forEach(function (n) {
+          html += '<div class="search-item-flower">' +
+                    '<span class="search-item-name" onclick="searchPickFlower(\'' + escAttr(n) + '\')">' + esc(n) + '</span>' +
+                    '<a class="search-add-link" href="board.html?flower=' + encodeURIComponent(n) + '" onclick="event.stopPropagation()">보드에 추가</a>' +
+                  '</div>';
+        });
+      }
+      dd.innerHTML = html;
+      dd.classList.add('show');
+    }
+    function hideSearchDropdown() { document.getElementById('searchDropdown').classList.remove('show'); }
+    function searchPickMember(name) { hideSearchDropdown(); openMemberModal(name); }
+    function searchPickFlower(name) { hideSearchDropdown(); openFlowerModal(name); }
+
+    /* ---------- 임무 추천 순위 뷰 전환 (페이지 이동 없음) ---------- */
+    function showReco() {
+      document.getElementById('homeView').classList.add('hide');
+      document.getElementById('recoView').classList.add('show');
+    }
+    function showHome() {
+      document.getElementById('recoView').classList.remove('show');
+      document.getElementById('homeView').classList.remove('hide');
+      hideTip();
+      closeModal();
+    }
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(function (e) { e.classList.remove('active'); });
+      document.querySelectorAll('.tab-btn').forEach(function (e) { e.classList.remove('active'); });
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+      hideTip();
+      closeModal();
+    }
+
+    /* ---------- 보유 현황 / 보유자 팝업 ----------
+       페이지 로드시 이미 받아온 snap(Worker 스냅샷)을 그대로 씀. 정적 페이지라
+       google.script.run 폴백은 없음 — 못 받아왔으면 에러를 그대로 보여준다. */
+    function memberFlowersFromSnapshot(name) {
+      var bits = snap.unlocked[name];
+      if (bits == null) return null;
+      var rank = { 'UR+': 0, 'UR': 1, 'SSR': 2, 'SR+': 3, 'SR': 4 };
+      var myUpgrades = (snap.upgrades && snap.upgrades[name]) || {};
+      var list = [];
+      snap.flowers.forEach(function (f, i) {
+        if (bits.charAt(i) === '1') list.push({ name: f.name, grade: f.grade, upgrade: myUpgrades[f.name] || 0 });
+      });
+      list.sort(function (a, b) {
+        var ra = rank[a.grade] === undefined ? 99 : rank[a.grade];
+        var rb = rank[b.grade] === undefined ? 99 : rank[b.grade];
+        return ra - rb || (b.upgrade || 0) - (a.upgrade || 0) || a.name.localeCompare(b.name);
+      });
+      return list;
+    }
+    function flowerHoldersFromSnapshot(flowerName) {
+      var idx = flowerIndex[flowerName];
+      if (!idx) return null;
+      var holders = [];
+      snap.members.forEach(function (name) {
+        var bits = snap.unlocked[name];
+        if (bits && bits.charAt(idx.i) === '1') holders.push(name);
+      });
+      return holders.sort(function (a, b) { return a.localeCompare(b); });
+    }
+
+    var modalCache = { member: {}, flower: {} };
+
+    function openModal(title) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = '<div class="modal-loading">불러오는 중…</div>';
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+    function modalError(msg) {
+      document.getElementById('modalBody').innerHTML = '<div class="error-msg">불러오지 못했습니다.\n' + msg + '</div>';
+    }
+
+    function openMemberModal(name) {
+      hideTip();
+      openModal(name + ' 보유 현황');
+      if (modalCache.member[name]) { renderMemberModal(modalCache.member[name]); return; }
+      if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
+      var list = memberFlowersFromSnapshot(name);
+      if (list == null) { modalError('일치하는 길드원을 찾지 못했습니다.'); return; }
+      modalCache.member[name] = list;
+      renderMemberModal(list);
+    }
+    function renderMemberModal(list) {
+      var body = document.getElementById('modalBody');
+      if (!list.length) { body.innerHTML = '<div class="modal-loading">보유한 꽃이 없습니다.</div>'; return; }
+      var html = '<div class="mflower-grid">';
+      list.forEach(function (f) {
+        html += '<div class="ticon b-' + (GCLASS[f.grade] || 'none') + '"' +
+                  ' data-name="' + esc(f.name) + '" data-grade="' + esc(f.grade) + '" data-plus="' + (f.upgrade || 0) + '">' +
+                  '<div class="ph">준비중</div>' +
+                  '<img loading="lazy" alt="" src="' + imgUrl(f.name) + '" onerror="this.style.display=\'none\'">' +
+                  (f.upgrade ? '<span class="plus">+' + f.upgrade + '</span>' : '') +
+                '</div>';
+      });
+      body.innerHTML = html + '</div>';
+    }
+
+    function openFlowerModal(name) {
+      hideTip();
+      openModal(name + ' 보유자');
+      if (modalCache.flower[name]) { renderFlowerModal(modalCache.flower[name]); return; }
+      if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
+      var list = flowerHoldersFromSnapshot(name);
+      if (list == null) { modalError('일치하는 꽃을 찾지 못했습니다.'); return; }
+      modalCache.flower[name] = list;
+      renderFlowerModal(list);
+    }
+    function renderFlowerModal(list) {
+      var body = document.getElementById('modalBody');
+      if (!list.length) { body.innerHTML = '<div class="modal-loading">보유한 길드원이 없습니다.</div>'; return; }
+      body.innerHTML = '<div class="mholder-list">' +
+        list.map(function (n) { return '<span class="mholder-chip">' + esc(n) + '</span>'; }).join('') +
+        '</div>';
+    }
+
+    document.getElementById('modalOverlay').addEventListener('click', function (ev) {
+      if (ev.target === this) closeModal();
+    });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeModal(); });
+
+    /* ---------- 이름표(아이콘 클릭 시) ---------- */
+    var tipTimer = null;
+    function showTip(ev, name, grade, plus) {
+      ev.stopPropagation();
+      var tip = document.getElementById('tip');
+      var g = grade ? '<span class="tg" style="background:' + (GCOLOR[grade] || '#9E9E9E') + '">' + grade + '</span>' : '';
+      tip.innerHTML = g + name + (plus ? ' <span style="color:#CE93D8">+' + plus + '</span>' : '');
+      tip.style.display = 'block';
+      tip.style.left = '-9999px';
+
+      var x = (ev.touches && ev.touches[0]) ? ev.touches[0].clientX : ev.clientX;
+      var y = (ev.touches && ev.touches[0]) ? ev.touches[0].clientY : ev.clientY;
+      var w = tip.offsetWidth, h = tip.offsetHeight;
+
+      var left = x - w / 2;
+      var top  = y - h - 14;
+      if (left < 8) left = 8;
+      if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+      if (top < 8) top = y + 18;
+
+      tip.style.left = left + 'px';
+      tip.style.top  = top + 'px';
+
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(hideTip, 2600);
+    }
+    function hideTip() {
+      clearTimeout(tipTimer);
+      document.getElementById('tip').style.display = 'none';
+    }
+    document.addEventListener('click', function (ev) {
+      var memberEl = ev.target.closest ? ev.target.closest('.mname[data-member]') : null;
+      if (memberEl) { openMemberModal(memberEl.dataset.member); return; }
+      var flowerEl = ev.target.closest ? ev.target.closest('.tname-link[data-flower]') : null;
+      if (flowerEl) { openFlowerModal(flowerEl.dataset.flower); return; }
+      var el = ev.target.closest ? ev.target.closest('.slot[data-name], .ticon[data-name]') : null;
+      if (el) { showTip(ev, el.dataset.name, el.dataset.grade, parseInt(el.dataset.plus, 10) || 0); return; }
+      hideTip();
+    });
+    document.addEventListener('scroll', hideTip, true);
+
+    /* ---------- 유틸 ---------- */
+    function parseFlower(raw) {
+      var s = String(raw == null ? '' : raw).trim();
+      if (!s || s === '-') return null;
+      var m = s.match(/^(.*?)\s*\(\s*\+(\d+)\s*\)\s*$/);
+      return m ? { name: m[1].trim(), plus: parseInt(m[2], 10) } : { name: s, plus: 0 };
+    }
+    function imgUrl(name) { return IMG + encodeURIComponent(name) + '.webp?v=' + IMG_VER; }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; });
+    }
+    function escAttr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+    /* ---------- 길드원별 임무 (추천 순위 뷰) ---------- */
+    function slotHtml(raw, rank) {
+      var f = parseFlower(raw);
+      if (!f) return '<div class="slot empty"><div class="ph">-</div></div>';
+      var g = gradeOf[f.name] || '';
+      return '<div class="slot b-' + (GCLASS[g] || 'none') + '"' +
+               ' data-name="' + esc(f.name) + '" data-grade="' + esc(g) + '" data-plus="' + f.plus + '">' +
+               '<div class="ph">준비중</div>' +
+               '<img loading="lazy" alt="" src="' + imgUrl(f.name) + '" onerror="this.style.display=\'none\'">' +
+               '<span class="num">' + rank + '</span>' +
+               (f.plus ? '<span class="plus">+' + f.plus + '</span>' : '') +
+             '</div>';
+    }
+    function renderMemberData(data) {
+      var res = document.getElementById('memberResult');
+      if (!data || !data.length) { res.innerHTML = '<div class="loading">검색 결과가 없습니다.</div>'; return; }
+      var sorted = data.slice().sort(function (a, b) {
+        var na = parseInt(String(a[1]).replace(/[^0-9]/g, ''), 10) || 0;
+        var nb = parseInt(String(b[1]).replace(/[^0-9]/g, ''), 10) || 0;
+        return (nb !== na) ? nb - na : String(a[0]).localeCompare(String(b[0]));
+      });
+      var html = '';
+      sorted.forEach(function (row) {
+        var slots = '';
+        for (var i = 2; i <= 6; i++) slots += slotHtml(row[i], i - 1);
+        html += '<div class="mrow">' +
+                  '<div class="mhead">' +
+                    '<span class="mname" data-member="' + esc(row[0]) + '">' + esc(row[0]) + '</span>' +
+                    '<span class="munlock">보유 ' + esc(row[1]) + '개</span>' +
+                  '</div>' +
+                  '<div class="slots">' + slots + '</div>' +
+                '</div>';
+      });
+      res.innerHTML = html;
+    }
+    function filterData() {
+      var q = document.getElementById('memberSearchInput').value.toLowerCase();
+      renderMemberData(allMemberData.filter(function (r) { return String(r[0]).toLowerCase().indexOf(q) !== -1; }));
+    }
+
+    /* ---------- 임무별 추천 (추천 순위 뷰) ---------- */
+    function renderTaskData(data) {
+      var res = document.getElementById('taskResult');
+      if (!data || !data.length) { res.innerHTML = '<div class="loading">검색 결과가 없습니다.</div>'; return; }
+      var html = '';
+      data.forEach(function (row) {
+        var name = String(row[0]).trim(), g = String(row[1]).trim();
+        var members = [];
+        for (var i = 4; i <= 8; i++) {
+          var v = String(row[i] == null ? '' : row[i]).trim();
+          if (v && v !== '-') members.push('<span><b>' + (i - 3) + '.</b> ' + esc(v) + '</span>');
+        }
+        html += '<div class="trow">' +
+                  '<div class="ticon b-' + (GCLASS[g] || 'none') + '"' +
+                    ' data-name="' + esc(name) + '" data-grade="' + esc(g) + '" data-plus="0">' +
+                    '<div class="ph">준비중</div>' +
+                    '<img loading="lazy" alt="" src="' + imgUrl(name) + '" onerror="this.style.display=\'none\'">' +
+                  '</div>' +
+                  '<div class="tbody">' +
+                    '<div class="tname"><span class="badge ' + (GCLASS[g] || 'none') + '">' + esc(g) + '</span>' +
+                      '<span class="tname-link" data-flower="' + esc(name) + '">' + esc(name) + '</span></div>' +
+                    '<div class="tmeta">' + esc(row[2]) + '점 · 보유 ' + esc(row[3]) + '명</div>' +
+                    '<div class="tmembers">' + (members.length ? members.join('') : '<span style="color:#b0bec5">추천 길드원 없음</span>') + '</div>' +
+                  '</div>' +
+                '</div>';
+      });
+      res.innerHTML = html;
+    }
+    function filterTaskData() {
+      var text  = document.getElementById('taskSearchInput').value.toLowerCase();
+      var grade = document.getElementById('gradeFilter').value;
+      var list = allTaskData
+        .filter(function (r) { return String(r[0]).toLowerCase().indexOf(text) !== -1 && (grade === 'all' || String(r[1]).trim() === grade); })
+        .sort(function (a, b) {
+          var ga = GRADE_ORDER[String(a[1]).trim()] || 99, gb = GRADE_ORDER[String(b[1]).trim()] || 99;
+          return (ga !== gb) ? ga - gb : String(a[0]).localeCompare(String(b[0]));
+        });
+      renderTaskData(list);
+    }
   </script>
 </body>
 </html>

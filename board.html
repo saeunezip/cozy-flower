@@ -23,9 +23,8 @@
 
       .header-area {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         flex-wrap: wrap;
         margin-bottom: 12px;
       }
@@ -116,28 +115,38 @@
 
       .myct {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        min-width: 68px;
-        padding: 5px 8px;
+        gap: 6px;
+        padding: 5px 6px;
         border: 1px solid #dfe3ea;
         border-radius: 9px;
         background: #f8f9fc;
-        cursor: pointer;
+      }
+      .myct-mid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
       }
       .myct b {
-        font-size: 16px;
+        font-size: 15px;
         color: #152c57;
         line-height: 1.1;
       }
       .myct span {
-        font-size: 10.5px;
+        font-size: 10px;
         color: #8b95a1;
         margin-top: 1px;
+        white-space: nowrap;
       }
       .myct.full b {
         color: #b45309;
+      }
+      .myct .stepper button {
+        width: 26px;
+        height: 26px;
+        font-size: 15px;
       }
 
       .note {
@@ -236,6 +245,14 @@
       }
       .cand.dim:hover {
         background: none;
+      }
+      .cand.unassign {
+        border: 1px dashed #cfd4dc;
+        border-radius: 8px;
+        margin-bottom: 6px;
+      }
+      .cand.unassign b {
+        color: #78838f;
       }
       .cand .who {
         flex: 1;
@@ -480,9 +497,6 @@
         border-width: 2px;
         background: #eef2fb;
       }
-      .slot.stale {
-        opacity: 0.45;
-      }
       .slot .top {
         display: flex;
         align-items: center;
@@ -569,18 +583,79 @@
         opacity: 0.35;
         cursor: default;
       }
+
+      /* 보드 현황 내보내기 팝업 */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(21, 44, 87, 0.55);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 14px;
+        max-width: 480px;
+        width: 100%;
+        max-height: 82vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      }
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 16px;
+        border-bottom: 1px solid #eceff1;
+        flex: none;
+      }
+      .modal-title {
+        font-size: 15px;
+        font-weight: bold;
+        color: #152c57;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #90a4ae;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+      }
+      .modal-body {
+        padding: 14px 16px;
+        overflow-y: auto;
+      }
+      .export-text {
+        width: 100%;
+        min-height: 260px;
+        padding: 10px;
+        border: 1px solid #dfe3e6;
+        border-radius: 8px;
+        font-family: "Consolas", "Malgun Gothic", sans-serif;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre;
+        resize: vertical;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header-area">
+        <a href="app.html" class="nav-btn ghost">&larr; 메인으로</a>
         <h2 class="title">임무 보드</h2>
-        <div style="display: flex; gap: 8px">
-          <button class="nav-btn ghost" onclick="reload(true)">
-            보드 새로고침
-          </button>
-          <a href="app.html" class="nav-btn">메인으로</a>
-        </div>
+        <button class="nav-btn ghost" style="margin-left: auto" onclick="reload(true)">
+          보드 새로고침
+        </button>
       </div>
 
       <div id="msg"></div>
@@ -590,8 +665,8 @@
           <select id="me" style="flex: 1" onchange="setMe()">
             <option value="">내 이름 고르기</option>
           </select>
-          <div class="myct" id="myCount" onclick="gotoCounts()">
-            <b>—</b><span>내 횟수</span>
+          <div class="myct" id="myCount">
+            <div class="myct-mid"><b>—</b><span>내 횟수</span></div>
           </div>
         </div>
         <p class="note" id="snapNote">불러오는 중…</p>
@@ -651,13 +726,26 @@
       </div>
 
       <div class="panel">
-        <h3>보드 현황</h3>
+        <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
+          <h3 style="margin: 0;">보드 현황</h3>
+          <button class="btn sm" onclick="openExportModal()">텍스트로 내보내기</button>
+        </div>
         <div id="grid" class="grid"></div>
         <div id="gridMore"></div>
-        <p class="note">
-          최근 등록한 것부터 보여 줍니다. 칸을 누르면 비울 수 있습니다.<br />
-          <b>2시간 지난 칸은 흐리게 표시됩니다. 인게임과 다를 수 있어요.</b>
-        </p>
+        <p class="note">최근 등록한 것부터 보여 줍니다. 칸을 누르면 비울 수 있습니다.</p>
+      </div>
+
+      <div id="exportOverlay" class="modal-overlay">
+        <div class="modal-box">
+          <div class="modal-head">
+            <span class="modal-title">보드 현황 내보내기</span>
+            <button class="modal-close" onclick="closeExportModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <textarea id="exportText" class="export-text" readonly></textarea>
+            <button class="btn" style="margin-top: 10px; width: 100%;" onclick="copyExportText()">복사</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -694,7 +782,6 @@
         "SR+": "g-sr-plus",
         SR: "g-sr",
       };
-      var STALE_MS = 2 * 60 * 60 * 1000;
       var WISH_TOP = 5; // 길드원마다 몇 순위까지 모을지
       var WISH_SKIP = { UR: 1, "UR+": 1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
       var UR_POOR_MAX = 4; // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
@@ -968,23 +1055,24 @@
         renderAll();
       }
 
-      function gotoCounts() {
-        document
-          .getElementById("counts")
-          .scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-
       function renderMyCount() {
         var box = document.getElementById("myCount");
         var st = me && stats[me];
         if (!st) {
           box.className = "myct";
-          box.innerHTML = "<b>—</b><span>내 횟수</span>";
+          box.innerHTML = '<div class="myct-mid"><b>—</b><span>내 횟수</span></div>';
           return;
         }
-        box.className = "myct" + (st.used >= MAX_COUNT ? " full" : "");
+        var full = st.used >= MAX_COUNT;
+        box.className = "myct" + (full ? " full" : "");
         box.innerHTML =
-          "<b>" + st.used + "/" + MAX_COUNT + "</b><span>내 횟수</span>";
+          '<span class="stepper"><button onclick="bump(me,-1)"' +
+          (st.used <= 0 ? " disabled" : "") +
+          ">−</button></span>" +
+          '<div class="myct-mid"><b>' + st.used + "/" + MAX_COUNT + '</b><span>내 횟수</span></div>' +
+          '<span class="stepper"><button onclick="bump(me,1)"' +
+          (full ? " disabled" : "") +
+          ">+</button></span>";
       }
 
       /* ---------- 꽃 이름 자동완성 ---------- */
@@ -1090,15 +1178,12 @@
         }
       }
 
-      /* ---------- 등록 -> 후보 ---------- */
+      /* ---------- 등록 -> 후보 ----------
+       * 번호는 여기서 요구하지 않는다 — 꽃 이름만으로 추천 후보를 먼저 보여주고,
+       * 번호는 실제로 등록(assign)할 때 그 시점 입력값을 읽어 확인한다. */
       function lookup() {
         closeSug();
-        var no = parseInt(document.getElementById("slotNo").value, 10);
         var name = document.getElementById("flowerName").value.trim();
-        if (!(no >= 1 && no <= 66)) {
-          say("임무 번호는 1~66 사이로 넣어 주세요.", true);
-          return;
-        }
         if (!name) {
           say("꽃 이름을 넣어 주세요.", true);
           return;
@@ -1116,7 +1201,6 @@
           return;
         }
         current = {
-          no: no,
           flower: name,
           grade: snap.flowers[idx].grade,
           idx: idx,
@@ -1194,8 +1278,6 @@
           'onerror="this.style.visibility=&quot;hidden&quot;">' +
           '<div style="flex:1;min-width:0;">' +
           '<div class="nm">' +
-          current.no +
-          "번 · " +
           esc(current.flower) +
           ' <span class="gtag ' +
           (GCLASS[g] || "g-none") +
@@ -1208,6 +1290,12 @@
           total +
           "명</div>" +
           "</div>" +
+          "</div>";
+
+        html +=
+          '<div class="cand unassign" onclick="assign(\'\')">' +
+          '<div class="who"><b>지정 안함</b>' +
+          '<div class="meta">이름 없이 이 임무만 먼저 등록합니다</div></div>' +
           "</div>";
 
         if (!total) {
@@ -1332,12 +1420,19 @@
 
       function assign(name) {
         if (!current) return;
+        // 번호는 후보를 볼 때가 아니라 실제로 등록하는 이 시점에 확인한다.
+        var no = parseInt(document.getElementById("slotNo").value, 10);
+        if (!(no >= 1 && no <= 66)) {
+          say("임무 번호를 1~66 사이로 넣어 주세요.", true);
+          document.getElementById("slotNo").focus();
+          return;
+        }
         if (!ensurePw()) return;
-        var prev = board[String(current.no)];
+        var prev = board[String(no)];
         if (
           prev &&
           !confirm(
-            current.no +
+            no +
               "번에 이미 있습니다: " +
               prev.flower +
               (prev.member ? " → " + prev.member : "") +
@@ -1345,8 +1440,7 @@
           )
         )
           return;
-        var no = current.no,
-          flower = current.flower,
+        var flower = current.flower,
           grade = current.grade;
         api({
           action: "assign",
@@ -1357,7 +1451,7 @@
           member: name,
         })
           .then(function () {
-            say(no + "번 · " + flower + " → " + name);
+            say(no + "번 · " + flower + (name ? " → " + name : ""));
             document.getElementById("slotNo").value = "";
             document.getElementById("flowerName").value = "";
             document.getElementById("candBox").innerHTML = "";
@@ -1528,12 +1622,14 @@
 
         document.getElementById("grid").innerHTML = shown
           .map(function (s) {
-            var stale = Date.now() - new Date(s.at).getTime() > STALE_MS;
             var mine = me && s.member === me;
+            // 적정 등급 — 이 사람이 보유한 꽃 중 최고 등급이 정확히 이 임무 등급과 같으면
+            // (더 높은 등급도 가능한 사람에게 낮은 임무를 맡긴 게 아니면) 별을 붙인다.
+            var st = s.member && stats[s.member];
+            var proper = st && st.bestIdx === ORDER.indexOf(s.grade);
             return (
               '<div class="slot' +
               (mine ? " mine" : "") +
-              (stale ? " stale" : "") +
               '" ' +
               'title="' +
               esc(s.flower) +
@@ -1548,6 +1644,7 @@
               (GCLASS[s.grade] || "g-none") +
               '">' +
               esc(s.grade || "?") +
+              (proper ? ' <span title="이 사람에게 적정한 등급입니다">⭐</span>' : "") +
               "</span>" +
               "</div>" +
               '<img src="' +
@@ -1580,6 +1677,73 @@
               "</button></div>"
             : "";
       }
+
+      /* ---------- 보드 현황 내보내기 ----------
+       * 길드원별로 묶고, 같은 사람 안에서는 같은 꽃끼리 번호를 모은다.
+       * 정렬 기준은 '이 사람/이 꽃이 가진 가장 작은 슬롯 번호' — 보드에 등록한
+       * 순서와 자연스럽게 맞아떨어진다. */
+      function buildExportText() {
+        var groups = {}; // 이름 -> { 꽃이름 -> [번호, ...] }
+        var minSlot = {}; // 이름 -> 그 사람의 가장 작은 슬롯 번호
+
+        slotList().forEach(function (s) {
+          var who = s.member || "미지정";
+          if (!groups[who]) groups[who] = {};
+          if (!groups[who][s.flower]) groups[who][s.flower] = [];
+          groups[who][s.flower].push(s.no);
+          if (minSlot[who] === undefined || s.no < minSlot[who]) minSlot[who] = s.no;
+        });
+
+        var members = Object.keys(groups).sort(function (a, b) {
+          return minSlot[a] - minSlot[b];
+        });
+
+        var blocks = members.map(function (who) {
+          var flowerMin = {};
+          var flowers = Object.keys(groups[who]);
+          flowers.forEach(function (f) {
+            flowerMin[f] = Math.min.apply(null, groups[who][f]);
+          });
+          flowers.sort(function (a, b) { return flowerMin[a] - flowerMin[b]; });
+
+          var lines = flowers.map(function (f) {
+            var nums = groups[who][f].slice().sort(function (a, b) { return a - b; });
+            return nums.map(function (n) { return n + "번"; }).join(", ") + " " + f;
+          });
+          return "[" + who + "]\n" + lines.join("\n");
+        });
+
+        return blocks.join("\n\n");
+      }
+
+      function openExportModal() {
+        document.getElementById("exportText").value = buildExportText();
+        document.getElementById("exportOverlay").classList.add("show");
+      }
+      function closeExportModal() {
+        document.getElementById("exportOverlay").classList.remove("show");
+      }
+      function copyExportText() {
+        var ta = document.getElementById("exportText");
+        ta.focus();
+        ta.select();
+        var ok = false;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value);
+            ok = true;
+          } else {
+            ok = document.execCommand("copy");
+          }
+        } catch (e) {}
+        say(ok ? "복사했습니다." : "복사에 실패했습니다. 직접 선택해서 복사해 주세요.", !ok);
+      }
+      document.getElementById("exportOverlay").addEventListener("click", function (ev) {
+        if (ev.target === this) closeExportModal();
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") closeExportModal();
+      });
 
       function toggleAllSlots() {
         showAllSlots = !showAllSlots;
@@ -1697,7 +1861,18 @@
         if (current) renderCandidates();
       }
 
-      reload();
+      // 메인화면 검색에서 "보드에 추가"로 넘어온 경우 — 꽃 이름을 채우고 후보까지 바로 보여준다.
+      // 번호는 이제 lookup() 이 요구하지 않으므로(등록 시점에만 확인), 여기서 바로 조회해도 된다.
+      reload().then(function () {
+        var f = new URLSearchParams(location.search).get('flower');
+        if (f && snap) {
+          document.getElementById('flowerName').value = f;
+          lookup();
+          var panel = document.getElementById('flowerName').closest('.panel');
+          if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('slotNo').focus();
+        }
+      });
 
       // 남이 바꾼 걸 따라잡기 위해 가끔 다시 읽는다.
       // 입력 중이거나 저장 대기 중이면 건너뛴다 — 화면이 밑에서 바뀌면 헷갈리니까.
