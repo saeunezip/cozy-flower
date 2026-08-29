@@ -123,6 +123,8 @@
     .preview-head-left { display: flex; align-items: baseline; gap: 8px; }
     .count-badge { display: none; align-items: center; gap: 5px; font-size: 11.5px; font-weight: bold; color: #1F3B73;
                     background: #eef2fb; padding: 3px 4px 3px 8px; border-radius: 999px; white-space: nowrap; }
+    .count-badge.warm { color: #2e7d5b; }
+    .count-badge.full { color: #c62828; }
     .count-badge .count-btn { width: 18px; height: 18px; border-radius: 50%; border: none; background: #fff; color: #1F3B73;
                                 font-size: 12px; font-weight: bold; line-height: 1; cursor: pointer; font-family: inherit;
                                 display: flex; align-items: center; justify-content: center; padding: 0; }
@@ -177,10 +179,11 @@
     .tools select { padding: 10px; border: 1px solid #dfe3e6; border-radius: 8px; font-size: 14px; font-weight: bold; color: #37474F; background: #fff; outline: none; cursor: pointer; font-family: inherit; }
 
     .mrow { background: #fff; border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-    .mhead { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; }
+    .mhead { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
     .mname { font-size: 14px; font-weight: bold; color: #152C57; cursor: pointer; }
     .mname:hover { text-decoration: underline; }
     .munlock { font-size: 12px; color: #90a4ae; }
+    .mscore { font-size: 11.5px; color: #6B4F8F; font-weight: bold; }
     .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 
     .slot { position: relative; aspect-ratio: 1/1; border-radius: 9px; overflow: hidden; background: #f0f0f2; border: 3px solid #eceff1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -414,8 +417,10 @@
     var GCLASS = { 'UR+':'ur-plus', 'UR':'ur', 'SSR':'ssr', 'SR+':'sr-plus', 'SR':'sr' };
     var GCOLOR = { 'UR+':'#E6B8AF', 'UR':'#F4CCCC', 'SSR':'#FFF2CC', 'SR+':'#B4A7D6', 'SR':'#D9D2E9' };
     var ORDER = ['UR+', 'UR', 'SSR', 'SR+', 'SR']; // 앞이 높은 등급 — board.html과 동일
+    var SHEET = { 'UR+':60, 'UR':56, 'SSR':50, 'SR+':46, 'SR':42 }; // 시트의 꽃 점수 — board.html과 동일
 
     var MAX_COUNT = 24;
+    var COUNT_WARN = 18; // board.html과 동일 — 넘으면 초록, 다 채우면 빨강
     var meName = '';
     try { meName = localStorage.getItem('boardMe') || ''; } catch (e) {}
     var onlyMine = false;
@@ -527,6 +532,8 @@
       if (!meName) { el.style.display = 'none'; return; }
       var used = counts[meName] || 0;
       var full = used >= MAX_COUNT;
+      var warm = !full && used > COUNT_WARN;
+      el.className = 'count-badge' + (full ? ' full' : warm ? ' warm' : '');
       el.innerHTML =
         '<button class="count-btn" onclick="bumpCount(-1)"' + (used <= 0 ? ' disabled' : '') + '>−</button>' +
         '<span>' + used + '/' + MAX_COUNT + '회</span>' +
@@ -574,6 +581,15 @@
       }
       bestGradeCache[name] = best;
       return best;
+    }
+    // 24회를 전부 이 사람의 눈높이(최고 등급 ~ 그 한 칸 아래)로 채운다고 가정했을 때의
+    // 예상 점수 범위. board.html의 후보 필터와 같은 범위 개념(최고 등급 + 한 칸 아래)을 쓴다.
+    function scoreRangeOf(name) {
+      var best = bestGradeOf(name);
+      if (!best || !snap) return null;
+      var bi = ORDER.indexOf(best);
+      var low = ORDER[bi + 1] || best; // 이미 최하 등급(SR)이면 더 낮은 게 없음
+      return { min: SHEET[low] * MAX_COUNT, max: SHEET[best] * MAX_COUNT };
     }
     function renderPreview() {
       var el = document.getElementById('previewGrid');
@@ -850,10 +866,15 @@
       sorted.forEach(function (row) {
         var slots = '';
         for (var i = 2; i <= 6; i++) slots += slotHtml(row[i], i - 1);
+        var range = scoreRangeOf(row[0]);
+        var scoreHtml = range
+          ? '<span class="mscore">' + range.min + '~' + range.max + '점(최대)</span>'
+          : '';
         html += '<div class="mrow">' +
                   '<div class="mhead">' +
                     '<span class="mname" data-member="' + esc(row[0]) + '">' + esc(row[0]) + '</span>' +
                     '<span class="munlock">보유 ' + esc(row[1]) + '개</span>' +
+                    scoreHtml +
                   '</div>' +
                   '<div class="slots">' + slots + '</div>' +
                 '</div>';
