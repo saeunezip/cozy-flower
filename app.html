@@ -234,7 +234,7 @@
     .modal-overlay.show { display: flex; }
     .modal-box { background: #fff; border-radius: 14px; max-width: 560px; width: 100%; max-height: 78vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
     .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #eceff1; flex: none; }
-    .modal-title { font-size: 15px; font-weight: bold; color: #152C57; }
+    .modal-title { font-size: 15px; font-weight: bold; color: #152C57; display: flex; align-items: center; gap: 8px; min-width: 0; }
     .modal-close { background: none; border: none; font-size: 20px; color: #90a4ae; cursor: pointer; line-height: 1; padding: 4px; }
     .modal-body { padding: 14px 10px; overflow-y: auto; }
     .modal-loading { text-align: center; color: #90a4ae; padding: 30px 0; font-size: 14px; }
@@ -242,6 +242,10 @@
     .mflower-grid .ticon { width: 100%; height: auto; aspect-ratio: 1/1; border: none; }
     .mholder-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .mholder-chip { background: #f0f2f5; color: #263238; font-size: 13px; font-weight: bold; padding: 6px 11px; border-radius: 20px; }
+    .mholder-rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; font-size: 14px; font-weight: bold; color: #263238; border-bottom: 1px solid #f0f2f5; }
+    .mholder-rank-badge { flex: none; min-width: 40px; text-align: center; font-size: 11px; font-weight: bold; color: #fff; background: #1F3B73; border-radius: 20px; padding: 3px 6px; }
+    .mholder-rest-label { font-size: 12px; color: #90a4ae; margin: 12px 2px 6px; font-weight: bold; }
+    .modal-title-thumb { width: 26px; height: 26px; border-radius: 7px; object-fit: cover; background: #eceff1; flex: none; }
   </style>
 </head>
 <body>
@@ -778,6 +782,8 @@
       });
       return list;
     }
+    // 보유자를 희소도(임무 보드와 같은 우선순위 개념) 순으로 정렬한다 — 이 꽃을 누구에게
+    // 먼저 맡기는 게 좋은지 한눈에 보이게. 희소도를 낼 수 없는 사람(p=0)은 맨 뒤로.
     function flowerHoldersFromSnapshot(flowerName) {
       var idx = flowerIndex[flowerName];
       if (!idx) return null;
@@ -786,13 +792,27 @@
         var bits = snap.unlocked[name];
         if (bits && bits.charAt(idx.i) === '1') holders.push(name);
       });
-      return holders.sort(function (a, b) { return a.localeCompare(b); });
+      var computed = MissionRegister.computeStats(snap, counts);
+      holders.sort(function (a, b) {
+        var sa = computed.stats[a] ? computed.stats[a].scarcity : null;
+        var sb = computed.stats[b] ? computed.stats[b].scarcity : null;
+        if (sa === null && sb === null) return a.localeCompare(b);
+        if (sa === null) return 1;
+        if (sb === null) return -1;
+        return sb - sa;
+      });
+      return holders;
     }
 
     var modalCache = { member: {}, flower: {} };
 
     function openModal(title) {
       document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = '<div class="modal-loading">불러오는 중…</div>';
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+    function openModalHtml(titleHtml) {
+      document.getElementById('modalTitle').innerHTML = titleHtml;
       document.getElementById('modalBody').innerHTML = '<div class="modal-loading">불러오는 중…</div>';
       document.getElementById('modalOverlay').classList.add('show');
     }
@@ -828,7 +848,10 @@
 
     function openFlowerModal(name) {
       hideTip();
-      openModal(name + ' 보유자');
+      openModalHtml(
+        '<img class="modal-title-thumb" src="' + imgUrl(name) + '" alt="" onerror="this.style.display=\'none\'">' +
+        '<span>' + esc(name) + ' 보유자</span>',
+      );
       if (modalCache.flower[name]) { renderFlowerModal(modalCache.flower[name]); return; }
       if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
       var list = flowerHoldersFromSnapshot(name);
@@ -836,12 +859,23 @@
       modalCache.flower[name] = list;
       renderFlowerModal(list);
     }
+    // list는 희소도(우선순위) 순으로 이미 정렬돼 있다 — 앞 5명은 순위를 붙여 보여주고,
+    // 나머지는 그 아래 칩으로만 나열한다.
     function renderFlowerModal(list) {
       var body = document.getElementById('modalBody');
       if (!list.length) { body.innerHTML = '<div class="modal-loading">보유한 길드원이 없습니다.</div>'; return; }
-      body.innerHTML = '<div class="mholder-list">' +
-        list.map(function (n) { return '<span class="mholder-chip">' + esc(n) + '</span>'; }).join('') +
-        '</div>';
+      var top = list.slice(0, 5);
+      var rest = list.slice(5);
+      var html = top.map(function (n, i) {
+        return '<div class="mholder-rank-row"><span class="mholder-rank-badge">' + (i + 1) + '순위</span>' + esc(n) + '</div>';
+      }).join('');
+      if (rest.length) {
+        html += '<div class="mholder-rest-label">나머지 ' + rest.length + '명</div>' +
+          '<div class="mholder-list">' +
+          rest.map(function (n) { return '<span class="mholder-chip">' + esc(n) + '</span>'; }).join('') +
+          '</div>';
+      }
+      body.innerHTML = html;
     }
 
     document.getElementById('modalOverlay').addEventListener('click', function (ev) {

@@ -1290,12 +1290,12 @@
       function useWish() {
         var w = wish[wishPick];
         if (!w) return;
-        document.getElementById("flowerName").value = w.name;
         document.getElementById("slotNo").value = "";
+        missionReg.setFlowerAndLookup(w.name);
         document.getElementById("slotNo").focus();
         document
-          .getElementById("slotNo")
-          .scrollIntoView({ behavior: "smooth", block: "center" });
+          .getElementById("candBox")
+          .scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       /* ---------- 보드 현황 ---------- */
