@@ -543,5 +543,8 @@
     });
   }
 
+  // 다른 화면(app.html의 꽃 보유자 팝업 등)에서도 같은 희소도 계산을 쓸 수 있게 노출한다.
+  MissionRegister.computeStats = computeStats;
+
   global.MissionRegister = MissionRegister;
 })(window);
