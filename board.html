@@ -779,7 +779,10 @@
       </div>
 
       <div class="panel">
-        <h3>임무 횟수</h3>
+        <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
+          <h3 style="margin: 0;">임무 횟수</h3>
+          <button class="btn sm" style="background: #fdecea; color: #8b1e1e;" onclick="resetAllCounts()">전체 초기화</button>
+        </div>
         <div id="counts"><div class="loading">불러오는 중…</div></div>
         <p class="note">
           각자 자기 숫자를 적어 주세요. 인게임에서 확인한 값을 그대로 넣으면
@@ -1865,6 +1868,25 @@
       }
 
       /* ---------- 임무 횟수 ---------- */
+      function resetAllCounts() {
+        if (!confirm("전원 임무 횟수를 0으로 초기화합니다. 되돌릴 수 없어요. 계속할까요?")) return;
+        if (!ensurePw()) return;
+        api({ action: "resetCounts", pw: pw })
+          .then(function () {
+            say("임무 횟수를 전부 초기화했습니다.");
+            return reload();
+          })
+          .catch(function (e) {
+            say(e.message, true);
+            if (e.message.indexOf("비밀번호") >= 0) {
+              pw = "";
+              try {
+                localStorage.removeItem("boardPw");
+              } catch (e2) {}
+            }
+          });
+      }
+
       function renderCounts() {
         document.getElementById("counts").innerHTML = snap.members
           .map(function (name, i) {
@@ -1912,8 +1934,6 @@
       }
 
       function bump(name, delta) {
-        if (name !== me && !confirm(name + "님의 횟수를 고칩니다. 맞나요?"))
-          return;
         var cur =
           pending[name] !== undefined ? pending[name] : counts[name] || 0;
         var next = Math.min(Math.max(cur + delta, 0), MAX_COUNT);
