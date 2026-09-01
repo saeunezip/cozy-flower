@@ -722,7 +722,6 @@
             />
             <div id="flowerSug" class="sug"></div>
           </span>
-          <button class="btn" onclick="lookup()">확인</button>
         </div>
         <div id="candBox"></div>
         <p class="note">
@@ -1973,16 +1972,22 @@
         if (current) renderCandidates();
       }
 
-      // 메인화면 검색에서 "보드에 추가"로 넘어온 경우 — 꽃 이름을 채우고 후보까지 바로 보여준다.
+      // 메인화면 검색("보드에 추가")이나 메인화면 임무 등록 입력칸에서 넘어온 경우 —
+      // 번호·꽃 이름을 채우고(꽃 이름이 있으면) 후보까지 바로 보여준다.
       // 번호는 이제 lookup() 이 요구하지 않으므로(등록 시점에만 확인), 여기서 바로 조회해도 된다.
       reload().then(function () {
-        var f = new URLSearchParams(location.search).get('flower');
+        var params = new URLSearchParams(location.search);
+        var f = params.get('flower');
+        var no = params.get('no');
+        if (no) document.getElementById('slotNo').value = no;
         if (f && snap) {
           document.getElementById('flowerName').value = f;
           lookup();
           var panel = document.getElementById('flowerName').closest('.panel');
           if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
           document.getElementById('slotNo').focus();
+        } else if (no) {
+          document.getElementById('flowerName').focus();
         }
       });
 

@@ -92,6 +92,16 @@
     .search-add-link:hover { filter: brightness(.94); }
     .search-empty { padding: 14px; font-size: 13px; color: #90a4ae; text-align: center; }
 
+    /* ---- 임무 등록 (번호·꽃 이름만 입력받고 board.html로 넘김) ---- */
+    .qr-section { background: #fff; border-radius: 12px; padding: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 16px; }
+    .qr-section h3 { margin: 0 0 10px; font-size: 14px; color: #152C57; }
+    .qr-row { display: flex; gap: 8px; }
+    .qr-row input { border: 1px solid #dfe3e6; border-radius: 9px; padding: 10px 12px; font-size: 15px; outline: none; font-family: inherit; }
+    .qr-row input:focus { border-color: #1F3B73; }
+    #qrNo { width: 92px; flex: none; }
+    .qr-flower-wrap { position: relative; flex: 1; min-width: 0; }
+    .qr-flower-wrap input { width: 100%; }
+
     /* ---- 바로가기 2x2 그리드 (흰 카드로 통일) ---- */
     .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .shortcut-tile { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px;
@@ -287,6 +297,17 @@
           </a>
         </div>
 
+        <div class="qr-section">
+          <h3>임무 등록</h3>
+          <div class="qr-row">
+            <input type="text" inputmode="numeric" id="qrNo" placeholder="번호" onkeydown="qrKey(event)">
+            <span class="qr-flower-wrap">
+              <input type="text" id="qrFlower" placeholder="꽃 이름" autocomplete="off" oninput="onQrFlowerInput()" onkeydown="qrKey(event)" onblur="setTimeout(closeQrSug,120)">
+              <div class="search-dropdown" id="qrSug"></div>
+            </span>
+          </div>
+        </div>
+
         <div class="preview-section">
           <div class="preview-head">
             <div class="preview-head-left">
@@ -440,6 +461,7 @@
       document.addEventListener('click', function (ev) {
         if (!ev.target.closest('.search-wrap')) hideSearchDropdown();
         if (!ev.target.closest('.me-pill-wrap')) hideMeMenu();
+        if (!ev.target.closest('.qr-flower-wrap')) closeQrSug();
       });
     }
 
@@ -695,6 +717,42 @@
     function hideSearchDropdown() { document.getElementById('searchDropdown').classList.remove('show'); }
     function searchPickMember(name) { hideSearchDropdown(); openMemberModal(name); }
     function searchPickFlower(name) { hideSearchDropdown(); openFlowerModal(name); }
+
+    /* ---------- 임무 등록 (번호·꽃 이름만 받고 board.html로 넘김) ----------
+     * 후보 추리기·배정 같은 복잡한 로직은 board.html에만 있고 여기서 중복하지 않는다.
+     * 이미 있던 "보드에 추가" 링크(board.html?flower=)와 같은 패턴을 번호까지 넓힌 것. */
+    var qrSugList = [];
+    function onQrFlowerInput() {
+      var q = document.getElementById('qrFlower').value.trim();
+      var box = document.getElementById('qrSug');
+      if (!q || !snap) { box.classList.remove('show'); return; }
+      var ql = q.toLowerCase();
+      qrSugList = (snap.flowers || []).map(function (f) { return f.name; })
+        .filter(function (n) { return n.toLowerCase().indexOf(ql) !== -1; }).slice(0, 6);
+      if (!qrSugList.length) { box.classList.remove('show'); return; }
+      box.innerHTML = qrSugList.map(function (n) {
+        return '<div class="search-item" onmousedown="qrPickFlower(\'' + escAttr(n) + '\')">' + esc(n) + '</div>';
+      }).join('');
+      box.classList.add('show');
+    }
+    function closeQrSug() { document.getElementById('qrSug').classList.remove('show'); }
+    function qrPickFlower(name) {
+      document.getElementById('qrFlower').value = name;
+      closeQrSug();
+      qrGo();
+    }
+    function qrKey(e) {
+      if (e.key === 'Enter') { closeQrSug(); qrGo(); }
+    }
+    function qrGo() {
+      var no = document.getElementById('qrNo').value.trim();
+      var flower = document.getElementById('qrFlower').value.trim();
+      if (!flower && !no) return;
+      var params = [];
+      if (flower) params.push('flower=' + encodeURIComponent(flower));
+      if (no) params.push('no=' + encodeURIComponent(no));
+      location.href = 'board.html' + (params.length ? '?' + params.join('&') : '');
+    }
 
     /* ---------- 임무 추천 순위 뷰 전환 (페이지 이동 없음) ---------- */
     function showReco() {
