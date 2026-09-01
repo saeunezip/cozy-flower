@@ -98,14 +98,9 @@
     .qr-row { display: flex; gap: 8px; }
     .qr-row input { border: 1px solid #dfe3e6; border-radius: 9px; padding: 10px 12px; font-size: 15px; outline: none; font-family: inherit; }
     .qr-row input:focus { border-color: #1F3B73; }
-    #qrNo { width: 92px; flex: none; }
+    #qrNo { width: 110px; flex: none; }
     .qr-flower-wrap { position: relative; flex: 1; min-width: 0; }
     .qr-flower-wrap input { width: 100%; padding-right: 30px; }
-    .qr-flower-wrap .clear-btn { display: none; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-                                   width: 20px; height: 20px; border: none; border-radius: 50%; background: #eceff1;
-                                   color: #78838f; font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
-                                   align-items: center; justify-content: center; }
-    .qr-flower-wrap .clear-btn.show { display: flex; }
 
     /* ---- 바로가기 2x2 그리드 (흰 카드로 통일) ---- */
     .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -305,13 +300,14 @@
         <div class="qr-section">
           <h3>임무 등록</h3>
           <div class="qr-row">
-            <input type="text" inputmode="numeric" id="qrNo" placeholder="번호" onkeydown="qrKey(event)">
+            <input type="text" inputmode="numeric" id="qrNo" placeholder="번호 (15, 17)">
             <span class="qr-flower-wrap">
-              <input type="text" id="qrFlower" placeholder="꽃 이름" autocomplete="off" oninput="onQrFlowerInput()" onkeydown="qrKey(event)" onblur="setTimeout(closeQrSug,120)">
-              <button type="button" class="clear-btn" id="qrClearBtn" onmousedown="event.preventDefault()" onclick="clearQrFlower()">&times;</button>
-              <div class="search-dropdown" id="qrSug"></div>
+              <input type="text" id="qrFlower" placeholder="꽃 이름" autocomplete="off">
+              <button type="button" class="mr-clear-btn" id="qrClearBtn">&times;</button>
+              <div class="mr-sug" id="qrSug"></div>
             </span>
           </div>
+          <div id="qrCandBox"></div>
         </div>
 
         <div class="preview-section">
@@ -384,6 +380,7 @@
     </div>
   </div>
 
+  <script src="mission-register.js"></script>
   <script>
     /* ===================================================================
        배포된 웹앱 주소 (등록/관리자 모드에서만 씀). 재배포해도 이 주소는
@@ -467,7 +464,7 @@
       document.addEventListener('click', function (ev) {
         if (!ev.target.closest('.search-wrap')) hideSearchDropdown();
         if (!ev.target.closest('.me-pill-wrap')) hideMeMenu();
-        if (!ev.target.closest('.qr-flower-wrap')) closeQrSug();
+        if (!ev.target.closest('.qr-flower-wrap')) missionReg.closeSug();
       });
     }
 
@@ -724,52 +721,23 @@
     function searchPickMember(name) { hideSearchDropdown(); openMemberModal(name); }
     function searchPickFlower(name) { hideSearchDropdown(); openFlowerModal(name); }
 
-    /* ---------- 임무 등록 (번호·꽃 이름만 받고 board.html로 넘김) ----------
-     * 후보 추리기·배정 같은 복잡한 로직은 board.html에만 있고 여기서 중복하지 않는다.
-     * 이미 있던 "보드에 추가" 링크(board.html?flower=)와 같은 패턴을 번호까지 넓힌 것. */
-    var qrSugList = [];
-    function syncQrClearBtn() {
-      document.getElementById('qrClearBtn').classList.toggle('show', !!document.getElementById('qrFlower').value);
-    }
-    function clearQrFlower() {
-      document.getElementById('qrFlower').value = '';
-      syncQrClearBtn();
-      closeQrSug();
-      document.getElementById('qrFlower').focus();
-    }
-    function onQrFlowerInput() {
-      syncQrClearBtn();
-      var q = document.getElementById('qrFlower').value.trim();
-      var box = document.getElementById('qrSug');
-      if (!q || !snap) { box.classList.remove('show'); return; }
-      var ql = q.toLowerCase();
-      qrSugList = (snap.flowers || []).map(function (f) { return f.name; })
-        .filter(function (n) { return n.toLowerCase().indexOf(ql) !== -1; }).slice(0, 6);
-      if (!qrSugList.length) { box.classList.remove('show'); return; }
-      box.innerHTML = qrSugList.map(function (n) {
-        return '<div class="search-item" onmousedown="qrPickFlower(\'' + escAttr(n) + '\')">' + esc(n) + '</div>';
-      }).join('');
-      box.classList.add('show');
-    }
-    function closeQrSug() { document.getElementById('qrSug').classList.remove('show'); }
-    function qrPickFlower(name) {
-      document.getElementById('qrFlower').value = name;
-      syncQrClearBtn();
-      closeQrSug();
-      qrGo();
-    }
-    function qrKey(e) {
-      if (e.key === 'Enter') { closeQrSug(); qrGo(); }
-    }
-    function qrGo() {
-      var no = document.getElementById('qrNo').value.trim();
-      var flower = document.getElementById('qrFlower').value.trim();
-      if (!flower && !no) return;
-      var params = [];
-      if (flower) params.push('flower=' + encodeURIComponent(flower));
-      if (no) params.push('no=' + encodeURIComponent(no));
-      location.href = 'board.html' + (params.length ? '?' + params.join('&') : '');
-    }
+    /* ---------- 임무 등록 (공용 mission-register.js) ----------
+     * board.html 임무 보드와 똑같은 위젯 — 후보 계산·배정 로직을 중복하지 않고
+     * 같은 스크립트를 불러와 쓴다. 배정에 성공하면 메인화면 데이터를 다시 받아온다. */
+    var missionReg = new MissionRegister({
+      noInputId: 'qrNo',
+      flowerInputId: 'qrFlower',
+      sugBoxId: 'qrSug',
+      clearBtnId: 'qrClearBtn',
+      candBoxId: 'qrCandBox',
+      apiUrl: API,
+      imgUrl: imgUrl,
+      getSnap: function () { return snap; },
+      getBoard: function () { return board; },
+      getCounts: function () { return counts; },
+      say: function (msg, isErr) { if (isErr) alert(msg); },
+      onAssigned: function () { loadHomeData(); },
+    });
 
     /* ---------- 임무 추천 순위 뷰 전환 (페이지 이동 없음) ---------- */
     function showReco() {

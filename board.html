@@ -729,7 +729,6 @@
             id="slotNo"
             placeholder="번호 (15, 17)"
             style="width: 110px"
-            onkeydown="if (event.key === 'Enter') lookup();"
           />
           <span class="sug-wrap">
             <input
@@ -738,20 +737,9 @@
               placeholder="꽃 이름"
               autocomplete="off"
               style="width: 100%; padding-right: 28px"
-              oninput="onFlowerInput()"
-              onkeydown="flowerKey(event)"
-              onblur="setTimeout(closeSug, 120)"
             />
-            <button
-              type="button"
-              class="clear-btn"
-              id="flowerClearBtn"
-              onmousedown="event.preventDefault()"
-              onclick="clearFlowerName()"
-            >
-              &times;
-            </button>
-            <div id="flowerSug" class="sug"></div>
+            <button type="button" class="mr-clear-btn" id="flowerClearBtn">&times;</button>
+            <div id="flowerSug" class="mr-sug"></div>
           </span>
         </div>
         <div id="candBox"></div>
@@ -821,6 +809,7 @@
       </div>
     </div>
 
+    <script src="mission-register.js"></script>
     <script>
       var API = "https://guild-flower-worker.saeunezip.workers.dev";
       var IMG = API + "/icon/";  // 2026-08-26부터 GitHub Pages 대신 Worker(R2)에서 서빙
@@ -859,10 +848,7 @@
         wish = [];
       var me = "",
         pw = "";
-      var sortBy = "scarce";
-      var current = null;
-      var showAllCand = false,
-        showAllSlots = false,
+      var showAllSlots = false,
         wishOpen = false;
 
       try {
@@ -1165,415 +1151,23 @@
           ">+</button></span>";
       }
 
-      /* ---------- 꽃 이름 자동완성 ---------- */
-      var SUG_MIN = 2,
-        SUG_MAX = 8;
-      var sugList = [],
-        sugIdx = -1;
-
-      function syncFlowerClearBtn() {
-        var has = !!document.getElementById("flowerName").value;
-        document.getElementById("flowerClearBtn").classList.toggle("show", has);
-      }
-      function clearFlowerName() {
-        document.getElementById("flowerName").value = "";
-        syncFlowerClearBtn();
-        closeSug();
-        current = null;
-        document.getElementById("candBox").innerHTML = "";
-        document.getElementById("flowerName").focus();
-      }
-      function onFlowerInput() {
-        syncFlowerClearBtn();
-        var q = document
-          .getElementById("flowerName")
-          .value.trim()
-          .replace(/\s+/g, "");
-        if (!snap || q.length < SUG_MIN) {
-          closeSug();
-          return;
-        }
-        sugList = snap.flowers
-          .filter(function (f) {
-            return f.name.replace(/\s+/g, "").indexOf(q) >= 0;
-          })
-          .slice(0, SUG_MAX);
-        sugIdx = -1;
-        renderSug();
-      }
-
-      function renderSug() {
-        var box = document.getElementById("flowerSug");
-        if (!sugList.length) {
-          box.innerHTML = '<div class="none">맞는 꽃이 없습니다.</div>';
-          box.className = "sug open";
-          return;
-        }
-        box.innerHTML = sugList
-          .map(function (f, i) {
-            return (
-              '<div class="s' +
-              (i === sugIdx ? " sel" : "") +
-              '" onmousedown="pickSug(' +
-              i +
-              ')">' +
-              '<img src="' +
-              imgUrl(f.name) +
-              '" alt="" ' +
-              'onerror="this.style.visibility=&quot;hidden&quot;">' +
-              '<span class="n">' +
-              esc(f.name) +
-              "</span>" +
-              '<span class="gtag ' +
-              (GCLASS[f.grade] || "g-none") +
-              '">' +
-              esc(f.grade) +
-              "</span>" +
-              "</div>"
-            );
-          })
-          .join("");
-        box.className = "sug open";
-      }
-
-      function closeSug() {
-        document.getElementById("flowerSug").className = "sug";
-        sugIdx = -1;
-      }
-
-      function pickSug(i) {
-        var f = sugList[i];
-        if (!f) return;
-        document.getElementById("flowerName").value = f.name;
-        syncFlowerClearBtn();
-        closeSug();
-        lookup();
-      }
-
-      function flowerKey(e) {
-        var open =
-          document.getElementById("flowerSug").className.indexOf("open") >= 0;
-        if (open && sugList.length) {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            sugIdx = (sugIdx + 1) % sugList.length;
-            renderSug();
-            return;
-          }
-          if (e.key === "ArrowUp") {
-            e.preventDefault();
-            sugIdx = (sugIdx - 1 + sugList.length) % sugList.length;
-            renderSug();
-            return;
-          }
-          if (e.key === "Escape") {
-            closeSug();
-            return;
-          }
-          if (e.key === "Enter" && sugIdx >= 0) {
-            e.preventDefault();
-            pickSug(sugIdx);
-            return;
-          }
-        }
-        if (e.key === "Enter") {
-          closeSug();
-          lookup();
-        }
-      }
-
-      /* ---------- 등록 -> 후보 ----------
-       * 번호는 여기서 요구하지 않는다 — 꽃 이름만으로 추천 후보를 먼저 보여주고,
-       * 번호는 실제로 등록(assign)할 때 그 시점 입력값을 읽어 확인한다. */
-      function lookup() {
-        closeSug();
-        var name = document.getElementById("flowerName").value.trim();
-        if (!name) {
-          say("꽃 이름을 넣어 주세요.", true);
-          return;
-        }
-
-        var idx = flowerIdx[name];
-        if (idx === undefined) {
-          document.getElementById("candBox").innerHTML = "";
-          say(
-            "'" +
-              name +
-              "' 은 목록에 없습니다. 21점 미만 임무이거나 이름이 다릅니다.",
-            true,
-          );
-          return;
-        }
-        current = {
-          flower: name,
-          grade: snap.flowers[idx].grade,
-          idx: idx,
-        };
-        showAllCand = false;
-        renderCandidates();
-      }
-
-      /*
-       * 후보 추리기 — 상한이 이 임무보다 두 단계 이상 높은 사람은 뺀다.
-       * 그 사람의 한 칸은 위 등급에 쓰는 게 낫다 (SR 42점 vs UR+ 60점, 차이 18점).
-       *
-       * 그래서 후보가 0명이 되는 일이 흔하다 — SR 꽃은 거의 전부, SR+ 는 열에 아홉.
-       * 낮은 등급 꽃을 가진 사람은 대개 꽃을 많이 모은 사람이라 상한도 높기 때문이다.
-       * 그건 문제가 아니라 답이다: 그 임무는 새로고침하는 게 맞다.
-       * 새로고침 2다이아로 +18점을 노리는 게, 상위 등급자의 한 칸을 태우는 것보다 싸다.
-       *
-       * 예외 — 눈높이 범위(최고 등급+한 칸 아래)에 꽃이 SPARSE_MAX개 이하뿐인 사람은
-       * 한 칸 더 낮은 등급까지 후보로 넣는다. 이 범위가 좁으면 임무 자체가 잘 안 뜨는데
-       * (기능-임무보드.md "플린이 문제"), 기회가 뜰 때마다 후보에서마저 빠지면 24회를
-       * 채울 길이 아예 막힌다. 희소도 계산(p)은 건드리지 않고 후보 필터만 넓힌다.
-       */
-      function candidates() {
-        var gi = ORDER.indexOf(current.grade);
-        var holders = snap.members.filter(function (name) {
-          return (snap.unlocked[name] || "").charAt(current.idx) === "1";
-        });
-
-        var pick = showAllCand
-          ? holders
-          : holders.filter(function (n) {
-              var st = stats[n];
-              if (st.bestIdx < 0) return true;
-              var floor = st.spanHeld <= SPARSE_MAX ? gi - 2 : gi - 1;
-              return st.bestIdx >= floor;
-            });
-
-        var list = pick.map(function (name) {
-          var up = (snap.upgrades[name] || {})[current.flower] || 0;
-          return {
-            name: name,
-            up: up,
-            score: BASE[current.grade] * 2 + up,
-            st: stats[name],
-          };
-        });
-
-        list.sort(function (a, b) {
-          if ((a.st.remain === 0) !== (b.st.remain === 0))
-            return a.st.remain === 0 ? 1 : -1;
-          if (sortBy === "up")
-            return b.up - a.up || (b.st.scarcity || 0) - (a.st.scarcity || 0);
-          return (b.st.scarcity || 0) - (a.st.scarcity || 0) || b.up - a.up;
-        });
-        return {
-          list: list,
-          hidden: holders.length - pick.length,
-          total: holders.length,
-        };
-      }
-
-      function renderCandidates() {
-        if (!current) return;
-        var r = candidates();
-        var list = r.list,
-          g = current.grade,
-          total = r.total;
-        var top = list.length ? list[0].st.scarcity || 0 : 0;
-
-        var html =
-          '<div class="task-head">' +
-          '<img src="' +
-          imgUrl(current.flower) +
-          '" alt="" ' +
-          'onerror="this.style.visibility=&quot;hidden&quot;">' +
-          '<div style="flex:1;min-width:0;">' +
-          '<div class="nm">' +
-          esc(current.flower) +
-          ' <span class="gtag ' +
-          (GCLASS[g] || "g-none") +
-          '">' +
-          esc(g) +
-          "</span></div>" +
-          '<div class="sub">기본 ' +
-          BASE[g] * 2 +
-          "점 (업그레이드 기준) · 해금 " +
-          total +
-          "명</div>" +
-          "</div>" +
-          "</div>";
-
-        html +=
-          '<div class="cand unassign" onclick="assign(\'\')">' +
-          '<div class="who"><b>자유 배정</b>' +
-          '<div class="meta">이름 없이 이 임무만 먼저 등록합니다</div></div>' +
-          "</div>";
-
-        if (!total) {
-          html +=
-            '<div class="msg err" style="margin-top:10px;">' +
-            "해금한 사람이 아무도 없습니다. <b>새로고침 하세요.</b></div>";
-          document.getElementById("candBox").innerHTML = html;
-          return;
-        }
-
-        if (!list.length) {
-          html +=
-            '<div class="msg err" style="margin-top:10px;">' +
-            "할 수 있는 " +
-            total +
-            "명이 전부 <b>더 높은 등급도 가능한 사람</b>입니다. " +
-            "<b>새로고침 하세요.</b>" +
-            '<div style="margin-top:8px;"><button class="btn sm" onclick="toggleAllCand()">' +
-            "그래도 보기</button></div></div>";
-          document.getElementById("candBox").innerHTML = html;
-          renderCandidates.list = [];
-          return;
-        }
-
-        html +=
-          '<div class="sortbar">' +
-          '<button class="btn sm' +
-          (sortBy === "scarce" ? " on" : "") +
-          '" onclick="setSort(\'scarce\')">기회 드문 순</button>' +
-          '<button class="btn sm' +
-          (sortBy === "up" ? " on" : "") +
-          '" onclick="setSort(\'up\')">개량 순</button>' +
-          "</div>";
-
-        var gi = ORDER.indexOf(g);
-        html += list
-          .map(function (c, i) {
-            var st = c.st;
-            var done = st.remain === 0;
-            var scar = st.scarcity === null ? "—" : Math.round(st.scarcity);
-            var isTight =
-              !done &&
-              st.scarcity !== null &&
-              top > 0 &&
-              st.scarcity >= top * 0.7;
-            // 이 사람 상한이 임무 등급보다 높으면 그 한 칸이 아깝다는 뜻
-            var over = st.bestIdx >= 0 && st.bestIdx < gi;
-            return (
-              '<div class="cand' +
-              (done ? " dim" : "") +
-              '"' +
-              (done ? "" : ' onclick="assignAt(' + i + ')"') +
-              ">" +
-              '<div class="who">' +
-              "<b>" +
-              esc(c.name) +
-              "</b>" +
-              '<div class="meta">' +
-              st.used +
-              "/" +
-              MAX_COUNT +
-              " · 최고 " +
-              (st.best || "없음") +
-              (over
-                ? ' <span class="warn">! 최대 가능 등급보다 낮음</span>'
-                : "") +
-              (c.up ? " · 개량 +" + c.up : "") +
-              "</div>" +
-              "</div>" +
-              '<div class="num">' +
-              '<div class="pt">' +
-              c.score +
-              "점</div>" +
-              '<div class="sc' +
-              (isTight ? " tight" : "") +
-              '">희소도 ' +
-              scar +
-              "</div>" +
-              "</div>" +
-              "</div>"
-            );
-          })
-          .join("");
-
-        if (r.hidden) {
-          html +=
-            '<div style="margin-top:8px;">' +
-            '<button class="btn sm" onclick="toggleAllCand()">' +
-            "상위 등급자 " +
-            r.hidden +
-            "명 숨김 · 모두 보기</button></div>";
-        } else if (showAllCand) {
-          html +=
-            '<div style="margin-top:8px;">' +
-            '<button class="btn sm on" onclick="toggleAllCand()">등급 맞는 사람만 보기</button></div>';
-        }
-
-        html +=
-          '<p class="note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. ' +
-          "높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>" +
-          "이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다. " +
-          "단, 눈높이 범위에 꽃이 " +
-          SPARSE_MAX +
-          "개 이하뿐인 사람은 한 칸 더 낮은 등급도 후보로 보여줍니다.</p>";
-
-        document.getElementById("candBox").innerHTML = html;
-        renderCandidates.list = list;
-      }
-
-      function setSort(v) {
-        sortBy = v;
-        renderCandidates();
-      }
-      function toggleAllCand() {
-        showAllCand = !showAllCand;
-        renderCandidates();
-      }
-      function assignAt(i) {
-        var c = renderCandidates.list && renderCandidates.list[i];
-        if (c) assign(c.name);
-      }
-
-      // "15, 17" 이나 "15 17" 처럼 여러 개를 한 번에 등록할 수 있게 콤마/공백으로 나눠 읽는다.
-      function parseSlotNumbers(raw) {
-        var seen = {};
-        return String(raw || "")
-          .split(/[,\s]+/)
-          .map(function (s) { return parseInt(s, 10); })
-          .filter(function (n) {
-            if (!(n >= 1 && n <= 66) || seen[n]) return false;
-            seen[n] = true;
-            return true;
-          });
-      }
-
-      function assign(name) {
-        if (!current) return;
-        // 번호는 후보를 볼 때가 아니라 실제로 등록하는 이 시점에 확인한다.
-        var nos = parseSlotNumbers(document.getElementById("slotNo").value);
-        if (!nos.length) {
-          say("임무 번호를 1~66 사이로 넣어 주세요. 여러 개면 '15, 17'처럼 콤마로 구분합니다.", true);
-          document.getElementById("slotNo").focus();
-          return;
-        }
-
-        var conflicts = nos
-          .filter(function (no) { return board[String(no)]; })
-          .map(function (no) {
-            var prev = board[String(no)];
-            return no + "번(" + prev.flower + (prev.member ? " → " + prev.member : "") + ")";
-          });
-        if (conflicts.length && !confirm("이미 있는 칸이 있습니다: " + conflicts.join(", ") + "\n\n덮어쓸까요?"))
-          return;
-
-        var flower = current.flower,
-          grade = current.grade;
-        // 등록은 이제 비밀번호가 필요 없다 — 지우기(clearSlot)만 관리자 전용으로 남아 있다.
-        Promise.all(
-          nos.map(function (no) {
-            return api({ action: "assign", no: no, flower: flower, grade: grade, member: name });
-          }),
-        )
-          .then(function () {
-            say(nos.map(function (n) { return n + "번"; }).join(", ") + " · " + flower + (name ? " → " + name : ""));
-            document.getElementById("slotNo").value = "";
-            document.getElementById("flowerName").value = "";
-            document.getElementById("candBox").innerHTML = "";
-            current = null;
-            return reload();
-          })
-          .catch(function (e) {
-            say(e.message, true);
-          });
-      }
+      /* ---------- 임무 등록: 번호·꽃 이름 자동완성 → 후보 → 배정 ----------
+       * 공용 mission-register.js 가 이 부분을 담당한다 — app.html 메인화면도
+       * 같은 스크립트로 같은 위젯을 띄운다. 자세한 로직은 그 파일 참고. */
+      var missionReg = new MissionRegister({
+        noInputId: "slotNo",
+        flowerInputId: "flowerName",
+        sugBoxId: "flowerSug",
+        clearBtnId: "flowerClearBtn",
+        candBoxId: "candBox",
+        apiUrl: API,
+        imgUrl: imgUrl,
+        getSnap: function () { return snap; },
+        getBoard: function () { return board; },
+        getCounts: function () { return counts; },
+        say: say,
+        onAssigned: function () { reload(); },
+      });
 
       function ensurePw() {
         if (pw) return true;
@@ -1991,7 +1585,7 @@
         }
         renderCounts();
         renderMyCount();
-        if (current) renderCandidates();
+        if (missionReg.current) missionReg.renderCandidates();
 
         // 연타할 때 요청이 쏟아지지 않도록 잠깐 모았다 보낸다
         clearTimeout(bumpTimer);
@@ -2014,7 +1608,7 @@
         renderWish();
         renderGrid();
         renderCounts();
-        if (current) renderCandidates();
+        if (missionReg.current) missionReg.renderCandidates();
       }
 
       // 메인화면 검색("보드에 추가")이나 메인화면 임무 등록 입력칸에서 넘어온 경우 —
@@ -2026,9 +1620,7 @@
         var no = params.get('no');
         if (no) document.getElementById('slotNo').value = no;
         if (f && snap) {
-          document.getElementById('flowerName').value = f;
-          syncFlowerClearBtn();
-          lookup();
+          missionReg.setFlowerAndLookup(f);
           var panel = document.getElementById('flowerName').closest('.panel');
           if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
           document.getElementById('slotNo').focus();
