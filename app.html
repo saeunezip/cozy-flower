@@ -100,7 +100,12 @@
     .qr-row input:focus { border-color: #1F3B73; }
     #qrNo { width: 92px; flex: none; }
     .qr-flower-wrap { position: relative; flex: 1; min-width: 0; }
-    .qr-flower-wrap input { width: 100%; }
+    .qr-flower-wrap input { width: 100%; padding-right: 30px; }
+    .qr-flower-wrap .clear-btn { display: none; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+                                   width: 20px; height: 20px; border: none; border-radius: 50%; background: #eceff1;
+                                   color: #78838f; font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
+                                   align-items: center; justify-content: center; }
+    .qr-flower-wrap .clear-btn.show { display: flex; }
 
     /* ---- 바로가기 2x2 그리드 (흰 카드로 통일) ---- */
     .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -303,6 +308,7 @@
             <input type="text" inputmode="numeric" id="qrNo" placeholder="번호" onkeydown="qrKey(event)">
             <span class="qr-flower-wrap">
               <input type="text" id="qrFlower" placeholder="꽃 이름" autocomplete="off" oninput="onQrFlowerInput()" onkeydown="qrKey(event)" onblur="setTimeout(closeQrSug,120)">
+              <button type="button" class="clear-btn" id="qrClearBtn" onmousedown="event.preventDefault()" onclick="clearQrFlower()">&times;</button>
               <div class="search-dropdown" id="qrSug"></div>
             </span>
           </div>
@@ -722,7 +728,17 @@
      * 후보 추리기·배정 같은 복잡한 로직은 board.html에만 있고 여기서 중복하지 않는다.
      * 이미 있던 "보드에 추가" 링크(board.html?flower=)와 같은 패턴을 번호까지 넓힌 것. */
     var qrSugList = [];
+    function syncQrClearBtn() {
+      document.getElementById('qrClearBtn').classList.toggle('show', !!document.getElementById('qrFlower').value);
+    }
+    function clearQrFlower() {
+      document.getElementById('qrFlower').value = '';
+      syncQrClearBtn();
+      closeQrSug();
+      document.getElementById('qrFlower').focus();
+    }
     function onQrFlowerInput() {
+      syncQrClearBtn();
       var q = document.getElementById('qrFlower').value.trim();
       var box = document.getElementById('qrSug');
       if (!q || !snap) { box.classList.remove('show'); return; }
@@ -738,6 +754,7 @@
     function closeQrSug() { document.getElementById('qrSug').classList.remove('show'); }
     function qrPickFlower(name) {
       document.getElementById('qrFlower').value = name;
+      syncQrClearBtn();
       closeQrSug();
       qrGo();
     }

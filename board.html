@@ -434,6 +434,28 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .sug-wrap .clear-btn {
+        display: none;
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        border: none;
+        border-radius: 50%;
+        background: #e3e6ec;
+        color: #6b7480;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+      }
+      .sug-wrap .clear-btn.show {
+        display: flex;
+      }
       .sug .none {
         padding: 10px;
         font-size: 13px;
@@ -715,11 +737,20 @@
               id="flowerName"
               placeholder="꽃 이름"
               autocomplete="off"
-              style="width: 100%"
+              style="width: 100%; padding-right: 28px"
               oninput="onFlowerInput()"
               onkeydown="flowerKey(event)"
               onblur="setTimeout(closeSug, 120)"
             />
+            <button
+              type="button"
+              class="clear-btn"
+              id="flowerClearBtn"
+              onmousedown="event.preventDefault()"
+              onclick="clearFlowerName()"
+            >
+              &times;
+            </button>
             <div id="flowerSug" class="sug"></div>
           </span>
         </div>
@@ -1140,7 +1171,20 @@
       var sugList = [],
         sugIdx = -1;
 
+      function syncFlowerClearBtn() {
+        var has = !!document.getElementById("flowerName").value;
+        document.getElementById("flowerClearBtn").classList.toggle("show", has);
+      }
+      function clearFlowerName() {
+        document.getElementById("flowerName").value = "";
+        syncFlowerClearBtn();
+        closeSug();
+        current = null;
+        document.getElementById("candBox").innerHTML = "";
+        document.getElementById("flowerName").focus();
+      }
       function onFlowerInput() {
+        syncFlowerClearBtn();
         var q = document
           .getElementById("flowerName")
           .value.trim()
@@ -1201,6 +1245,7 @@
         var f = sugList[i];
         if (!f) return;
         document.getElementById("flowerName").value = f.name;
+        syncFlowerClearBtn();
         closeSug();
         lookup();
       }
@@ -1982,6 +2027,7 @@
         if (no) document.getElementById('slotNo').value = no;
         if (f && snap) {
           document.getElementById('flowerName').value = f;
+          syncFlowerClearBtn();
           lookup();
           var panel = document.getElementById('flowerName').closest('.panel');
           if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
