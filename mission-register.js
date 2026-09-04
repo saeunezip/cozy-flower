@@ -206,7 +206,8 @@
    * ② 이 꽃이 그 사람의 최고 등급이 아니면 → 뒤 (더 좋은 선택지가 있으므로)
    * ③ 최고 등급을 유일하게(1개만) 가진 사람 — 무조건 최우선
    * ④ 그 외에는 이 꽃의 개량 단계로만 비교 — 높은 사람 우선
-   * ⑤ 이름 (동점이면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
+   * ⑤ 개량까지 같으면 그 등급 보유 개수 적은 사람 우선 (동점 폭을 줄이는 마지막 기준)
+   * ⑥ 이름 (그래도 같으면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
    */
   function holderRankCompare(stats, upgrades, flowerName, flowerGrade) {
     upgrades = upgrades || {};
@@ -225,6 +226,9 @@
       var upA = (upgrades[a] || {})[flowerName] || 0;
       var upB = (upgrades[b] || {})[flowerName] || 0;
       if (upA !== upB) return upB - upA;
+      var cntA = (A.perGrade && A.perGrade[flowerGrade]) || 0;
+      var cntB = (B.perGrade && B.perGrade[flowerGrade]) || 0;
+      if (cntA !== cntB) return cntA - cntB;
       return String(a).localeCompare(String(b));
     };
   }
@@ -244,7 +248,10 @@
     if (asolo !== bsolo) return false;
     var upA = (upgrades[a] || {})[flowerName] || 0;
     var upB = (upgrades[b] || {})[flowerName] || 0;
-    return upA === upB;
+    if (upA !== upB) return false;
+    var cntA = (A.perGrade && A.perGrade[flowerGrade]) || 0;
+    var cntB = (B.perGrade && B.perGrade[flowerGrade]) || 0;
+    return cntA === cntB;
   }
 
   // "이 꽃은 새로고침 금지" 목록 — 남은 임무가 minRemain 이상인 사람만 순위 계산에 넣고,
