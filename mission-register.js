@@ -94,6 +94,7 @@
       ".mr-nr-fb{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.15;color:#4a5560;padding:3px;word-break:keep-all}" +
       ".mr-nr-name{font-size:10.5px;font-weight:bold;color:#37474f;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".mr-nr-empty{color:#8b95a1;font-size:13px;padding:10px 2px}" +
+      ".mr-nr-star{position:absolute;top:3px;right:3px;font-size:14px;line-height:1;filter:drop-shadow(0 0 2px rgba(0,0,0,.5))}" +
       ".mr-rank-lead{color:#1f3b73;font-weight:bold;font-size:13.5px}" +
       ".mr-rank-hint{color:#90a4ae;font-size:12px;margin:2px 0 8px}" +
       ".mr-rank-row{display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:14px;font-weight:bold;color:#263238;border-bottom:1px solid #f1f2f5;cursor:pointer;border-radius:8px}" +
@@ -102,6 +103,7 @@
       ".mr-rank-row-solo .mr-rank-badge{background:#c62828}" +
       ".mr-rank-row-solo .mr-rank-note{color:#c62828;font-weight:bold}" +
       ".mr-rank-name{flex:1;min-width:0}" +
+      ".mr-rank-star-badge{flex:none;font-size:11px;font-weight:bold;color:#8a6100;background:#fff3cd;border-radius:20px;padding:2px 7px;white-space:nowrap}" +
       ".mr-rank-note{color:#78838f;font-size:12px;font-weight:normal;white-space:nowrap}" +
       ".mr-rest-label{font-size:12px;color:#90a4ae;margin:12px 2px 6px;font-weight:bold}" +
       ".mr-rest-list{display:flex;flex-wrap:wrap;gap:8px}" +
@@ -130,12 +132,16 @@
     var stats = {};
     snap.members.forEach(function (name) {
       var bits = snap.unlocked[name] || "";
+      var ups = (snap.upgrades && snap.upgrades[name]) || {};
       var per = {},
-        total = 0;
+        total = 0,
+        bestScore = 0;
       snap.flowers.forEach(function (f, i) {
         if (bits.charAt(i) === "1") {
           per[f.grade] = (per[f.grade] || 0) + 1;
           total++;
+          var score = (BASE[f.grade] || 0) * 2 + (ups[f.name] || 0);
+          if (score > bestScore) bestScore = score;
         }
       });
       var best = "";
@@ -165,6 +171,7 @@
         bestIdx: bestIdx,
         bestCount: bestIdx >= 0 ? per[best] || 0 : 0, // 최고 등급을 몇 개나 가졌는지 — 1개뿐이면 "유일한 최고등급"
         perGrade: per, // 등급별 보유 개수 — 최고 등급이 아닌 등급도 조회 가능(눈높이 예외 후보용)
+        bestScore: bestScore, // 보유한 모든 꽃 중 가장 높은 점수(등급+개량) — "본인 최고 점수 꽃" 판별용
         spanHeld: spanHeld,
         used: used,
         remain: remain,
@@ -183,12 +190,18 @@
     return parts.join(" · ");
   }
 
+  // 이 꽃(grade+up)이 그 사람이 보유한 모든 꽃 중 가장 높은 점수인가 — "⭐최고점수" 배지용.
+  function isPersonBestScore(st, flowerGrade, up) {
+    if (!st) return false;
+    return (BASE[flowerGrade] || 0) * 2 + up === st.bestScore;
+  }
+
   /*
    * "이 꽃은 새로고침 금지" / 꽃 보유자 팝업 / 임무 등록 후보(추천순)에 같이 쓰는 정렬 기준.
    * ① 남은 임무 0회 → 맨 뒤
    * ② 이 꽃이 그 사람의 최고 등급이 아니면 → 뒤 (더 좋은 선택지가 있으므로)
-   * ③ 최고 등급을 유일하게(1개만) 가진 사람 우선 — bestCount 오름차순
-   * ④ 이 꽃의 개량 단계 — 높은 사람 우선
+   * ③ 최고 등급을 유일하게(1개만) 가진 사람 — 무조건 최우선
+   * ④ 그 외에는 이 꽃의 개량 단계로만 비교 — 높은 사람 우선
    * ⑤ 이름 (동점이면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
    */
   function holderRankCompare(stats, upgrades, flowerName, flowerGrade) {
@@ -202,7 +215,9 @@
       var at = A.best === flowerGrade ? 0 : 1;
       var bt = B.best === flowerGrade ? 0 : 1;
       if (at !== bt) return at - bt;
-      if (at === 0 && (A.bestCount || 0) !== (B.bestCount || 0)) return (A.bestCount || 0) - (B.bestCount || 0);
+      var asolo = at === 0 && (A.bestCount || 0) === 1;
+      var bsolo = bt === 0 && (B.bestCount || 0) === 1;
+      if (asolo !== bsolo) return asolo ? -1 : 1;
       var upA = (upgrades[a] || {})[flowerName] || 0;
       var upB = (upgrades[b] || {})[flowerName] || 0;
       if (upA !== upB) return upB - upA;
@@ -220,7 +235,9 @@
     var at = A.best === flowerGrade ? 0 : 1;
     var bt = B.best === flowerGrade ? 0 : 1;
     if (at !== bt) return false;
-    if (at === 0 && (A.bestCount || 0) !== (B.bestCount || 0)) return false;
+    var asolo = at === 0 && (A.bestCount || 0) === 1;
+    var bsolo = bt === 0 && (B.bestCount || 0) === 1;
+    if (asolo !== bsolo) return false;
     var upA = (upgrades[a] || {})[flowerName] || 0;
     var upB = (upgrades[b] || {})[flowerName] || 0;
     return upA === upB;
@@ -253,6 +270,8 @@
         tie++;
       }
       entry.rank1Tie = tie;
+      // 1순위가 유일 최고등급이면(=이 꽃에 유일 최고등급 보유자가 있으면) 카드에 별을 띄운다.
+      entry.hasSolo = (stats[entry.holders[0]] || {}).bestCount === 1;
       return entry;
     });
 
@@ -279,6 +298,7 @@
             '<div class="mr-nr-img-wrap">' +
             '<img src="' + imgUrl(entry.name) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
             '<div class="mr-nr-fb">' + esc(entry.name) + "</div>" +
+            (entry.hasSolo ? '<span class="mr-nr-star" title="유일 최고등급 보유자 있음">⭐</span>' : "") +
             "</div>" +
             '<div class="mr-nr-name">' + esc(noRerollCardLabel(entry)) + "</div>" +
             "</button>"
@@ -313,10 +333,12 @@
         var up = (upgrades[name] || {})[entry.name] || 0;
         var note = holderNote(st, entry.grade, up);
         var solo = (st.perGrade && st.perGrade[entry.grade]) === 1;
+        var star = isPersonBestScore(st, entry.grade, up);
         return (
           '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
           '<span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
           '<span class="mr-rank-name">' + esc(name) + "</span>" +
+          (star ? '<span class="mr-rank-star-badge">⭐최고점수</span>' : "") +
           '<span class="mr-rank-note">' + esc(note) + "</span>" +
           "</div>"
         );
@@ -771,6 +793,7 @@
   // 다른 화면(app.html의 꽃 보유자 팝업 등)에서도 같은 희소도 계산을 쓸 수 있게 노출한다.
   MissionRegister.computeStats = computeStats;
   MissionRegister.holderNote = holderNote;
+  MissionRegister.isPersonBestScore = isPersonBestScore;
   MissionRegister.holderRankCompare = holderRankCompare;
   MissionRegister.sameTier = sameTier;
   MissionRegister.buildNoRerollList = buildNoRerollList;
