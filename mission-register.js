@@ -764,6 +764,10 @@
     });
   }
 
+  // CSS는 MissionRegister 위젯을 만들지 않는 화면(app.html의 "이 꽃은 새로고침 금지" 등,
+  // static 함수만 쓰는 곳)에도 필요하므로 인스턴스 생성 여부와 상관없이 스크립트 로드 시 바로 넣는다.
+  injectStyles();
+
   // 다른 화면(app.html의 꽃 보유자 팝업 등)에서도 같은 희소도 계산을 쓸 수 있게 노출한다.
   MissionRegister.computeStats = computeStats;
   MissionRegister.holderNote = holderNote;
