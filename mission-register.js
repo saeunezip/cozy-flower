@@ -65,7 +65,7 @@
       ".mr-meta{color:#78838f;font-size:12px;margin-top:2px}" +
       ".mr-warn{color:#c62828;font-weight:bold;white-space:nowrap}" +
       ".mr-num{text-align:right;font-size:13px;white-space:nowrap}" +
-      ".mr-pt{font-weight:bold;color:#152c57}.mr-sc{color:#78838f;font-size:11.5px}.mr-sc.mr-tight{color:#b45309;font-weight:bold}" +
+      ".mr-pt{font-weight:bold;color:#152c57}.mr-sc{color:#78838f;font-size:11.5px}" +
       ".mr-sortbar{display:flex;gap:6px;margin:10px 0 4px}" +
       ".mr-btn{font-family:inherit;border:none;border-radius:9px;cursor:pointer;font-weight:bold}" +
       ".mr-btn-sm{flex:1;padding:6px 10px;font-size:13px;background:#e8ebf2;color:#1f3b73}" +
@@ -83,7 +83,25 @@
       ".mr-clear-btn{display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);width:20px;height:20px;" +
       "border:none;border-radius:50%;background:#e3e6ec;color:#6b7480;font-size:13px;line-height:1;cursor:pointer;padding:0;" +
       "align-items:center;justify-content:center}" +
-      ".mr-clear-btn.mr-clear-show{display:flex}";
+      ".mr-clear-btn.mr-clear-show{display:flex}" +
+      ".mr-nr-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#37474f}" +
+      ".mr-nr-head input{width:52px;padding:6px 8px;border:1px solid #cfd4dc;border-radius:8px;font-size:13px;text-align:center;font-family:inherit}" +
+      ".mr-nr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}" +
+      ".mr-nr-card{padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:center}" +
+      ".mr-nr-card:hover{filter:brightness(.93)}" +
+      ".mr-nr-img-wrap{position:relative;width:100%;aspect-ratio:1/1;border-radius:11px;overflow:hidden;background:#f0f1f4}" +
+      ".mr-nr-img-wrap img{width:100%;height:100%;object-fit:cover;display:block}" +
+      ".mr-nr-fb{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.15;color:#4a5560;padding:3px;word-break:keep-all}" +
+      ".mr-nr-name{font-size:10.5px;font-weight:bold;color:#37474f;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mr-nr-empty{color:#8b95a1;font-size:13px;padding:10px 2px}" +
+      ".mr-rank-lead{color:#1f3b73;font-weight:bold;font-size:13.5px;margin-bottom:8px}" +
+      ".mr-rank-row{display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:14px;font-weight:bold;color:#263238;border-bottom:1px solid #f1f2f5}" +
+      ".mr-rank-badge{flex:none;min-width:40px;text-align:center;font-size:11px;font-weight:bold;color:#fff;background:#1f3b73;border-radius:20px;padding:3px 6px}" +
+      ".mr-rank-name{flex:1;min-width:0}" +
+      ".mr-rank-note{color:#78838f;font-size:12px;font-weight:normal;white-space:nowrap}" +
+      ".mr-rest-label{font-size:12px;color:#90a4ae;margin:12px 2px 6px;font-weight:bold}" +
+      ".mr-rest-list{display:flex;flex-wrap:wrap;gap:8px}" +
+      ".mr-chip{background:#f0f2f5;color:#263238;font-size:13px;font-weight:bold;padding:6px 11px;border-radius:20px}";
     var tag = document.createElement("style");
     tag.textContent = css;
     document.head.appendChild(tag);
@@ -141,6 +159,8 @@
         p: p,
         best: best,
         bestIdx: bestIdx,
+        bestCount: bestIdx >= 0 ? per[best] || 0 : 0, // 최고 등급을 몇 개나 가졌는지 — 1개뿐이면 "유일한 최고등급"
+        perGrade: per, // 등급별 보유 개수 — 최고 등급이 아닌 등급도 조회 가능(눈높이 예외 후보용)
         spanHeld: spanHeld,
         used: used,
         remain: remain,
@@ -148,6 +168,160 @@
       };
     });
     return { stats: stats, holders: holders, gradeTotal: gradeTotal };
+  }
+
+  // 이름 옆에 붙이는 문구 — "+개량단계 · 등급 N개 보유". 개량이 0이면 그 부분은 뺀다.
+  function holderNote(st, flowerGrade, up) {
+    var cnt = (st && st.perGrade && st.perGrade[flowerGrade]) || 0;
+    var parts = [];
+    if (up) parts.push("+" + up);
+    parts.push(flowerGrade + " " + cnt + "개 보유");
+    return parts.join(" · ");
+  }
+
+  /*
+   * "이 꽃은 새로고침 금지" / 꽃 보유자 팝업 / 임무 등록 후보(추천순)에 같이 쓰는 정렬 기준.
+   * ① 남은 임무 0회 → 맨 뒤
+   * ② 이 꽃이 그 사람의 최고 등급이 아니면 → 뒤 (더 좋은 선택지가 있으므로)
+   * ③ 최고 등급을 유일하게(1개만) 가진 사람 우선 — bestCount 오름차순
+   * ④ 이 꽃의 개량 단계 — 높은 사람 우선
+   * ⑤ 이름 (동점이면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
+   */
+  function holderRankCompare(stats, upgrades, flowerName, flowerGrade) {
+    upgrades = upgrades || {};
+    return function (a, b) {
+      var A = stats[a] || {},
+        B = stats[b] || {};
+      var ao = A.remain === 0,
+        bo = B.remain === 0;
+      if (ao !== bo) return ao ? 1 : -1;
+      var at = A.best === flowerGrade ? 0 : 1;
+      var bt = B.best === flowerGrade ? 0 : 1;
+      if (at !== bt) return at - bt;
+      if (at === 0 && (A.bestCount || 0) !== (B.bestCount || 0)) return (A.bestCount || 0) - (B.bestCount || 0);
+      var upA = (upgrades[a] || {})[flowerName] || 0;
+      var upB = (upgrades[b] || {})[flowerName] || 0;
+      if (upA !== upB) return upB - upA;
+      return String(a).localeCompare(String(b));
+    };
+  }
+
+  // holderRankCompare와 같은 기준으로 봤을 때 두 사람이 완전히 동순위인지 — 이름(마지막 임의
+  // 타이브레이크)만 빼고 비교한다. 화면에 "공동 N순위"를 표시할 때 쓴다.
+  function sameTier(a, b, stats, upgrades, flowerName, flowerGrade) {
+    upgrades = upgrades || {};
+    var A = stats[a] || {},
+      B = stats[b] || {};
+    if ((A.remain === 0) !== (B.remain === 0)) return false;
+    var at = A.best === flowerGrade ? 0 : 1;
+    var bt = B.best === flowerGrade ? 0 : 1;
+    if (at !== bt) return false;
+    if (at === 0 && (A.bestCount || 0) !== (B.bestCount || 0)) return false;
+    var upA = (upgrades[a] || {})[flowerName] || 0;
+    var upB = (upgrades[b] || {})[flowerName] || 0;
+    return upA === upB;
+  }
+
+  // "이 꽃은 새로고침 금지" 목록 — 남은 임무가 minRemain 이상인 사람만 순위 계산에 넣고,
+  // 그 안에서 "누군가의 최고 등급"인 꽃마다 카드를 하나씩 만든다.
+  function buildNoRerollList(snap, counts, minRemain) {
+    var computed = computeStats(snap, counts);
+    var stats = computed.stats;
+    var upgrades = snap.upgrades || {};
+
+    var map = {};
+    snap.flowers.forEach(function (f, i) {
+      snap.members.forEach(function (name) {
+        var st = stats[name];
+        if (!st || st.remain < minRemain || st.best !== f.grade) return;
+        if ((snap.unlocked[name] || "").charAt(i) !== "1") return;
+        if (!map[f.name]) map[f.name] = { name: f.name, grade: f.grade, holders: [] };
+        map[f.name].holders.push(name);
+      });
+    });
+
+    var list = Object.keys(map).map(function (k) {
+      var entry = map[k];
+      entry.holders.sort(holderRankCompare(stats, upgrades, entry.name, entry.grade));
+      var tie = 1;
+      for (var i = 1; i < entry.holders.length; i++) {
+        if (!sameTier(entry.holders[0], entry.holders[i], stats, upgrades, entry.name, entry.grade)) break;
+        tie++;
+      }
+      entry.rank1Tie = tie;
+      return entry;
+    });
+
+    list.sort(function (a, b) {
+      return ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) || a.name.localeCompare(b.name);
+    });
+    return { list: list, stats: stats, upgrades: upgrades };
+  }
+
+  function noRerollCardLabel(entry) {
+    var first = entry.holders[0];
+    if (!first) return "";
+    return entry.rank1Tie > 1 ? first + " (외 " + (entry.rank1Tie - 1) + "명)" : first;
+  }
+
+  function noRerollGridHtml(list, imgUrl) {
+    if (!list.length) return '<div class="mr-nr-empty">조건에 맞는 꽃이 없습니다.</div>';
+    return (
+      '<div class="mr-nr-grid">' +
+      list
+        .map(function (entry, i) {
+          return (
+            '<button type="button" class="mr-nr-card" data-mr-nr-idx="' + i + '" title="' + esc(entry.name) + " · " + esc(entry.grade) + '">' +
+            '<div class="mr-nr-img-wrap">' +
+            '<img src="' + imgUrl(entry.name) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+            '<div class="mr-nr-fb">' + esc(entry.name) + "</div>" +
+            "</div>" +
+            '<div class="mr-nr-name">' + esc(noRerollCardLabel(entry)) + "</div>" +
+            "</button>"
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  // 순위 번호는 완전히 동순위(sameTier)면 같은 번호를 준다(표준 경쟁 순위 — 1,1,3,4...).
+  function noRerollDetailHtml(entry, stats, upgrades) {
+    upgrades = upgrades || {};
+    var top = entry.holders.slice(0, 5);
+    var rest = entry.holders.slice(5);
+    var ranks = [];
+    for (var ri = 0; ri < top.length; ri++) {
+      if (ri === 0) {
+        ranks.push(1);
+      } else if (sameTier(top[ri - 1], top[ri], stats, upgrades, entry.name, entry.grade)) {
+        ranks.push(ranks[ri - 1]);
+      } else {
+        ranks.push(ri + 1);
+      }
+    }
+    var html = '<div class="mr-rank-lead">' + entry.holders.length + "명의 최고등급 꽃입니다</div>";
+    html += top
+      .map(function (name, i) {
+        var st = stats[name] || {};
+        var up = (upgrades[name] || {})[entry.name] || 0;
+        var note = holderNote(st, entry.grade, up);
+        return (
+          '<div class="mr-rank-row"><span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
+          '<span class="mr-rank-name">' + esc(name) + "</span>" +
+          '<span class="mr-rank-note">' + esc(note) + "</span>" +
+          "</div>"
+        );
+      })
+      .join("");
+    if (rest.length) {
+      html +=
+        '<div class="mr-rest-label">그외 ' + rest.length + "명</div>" +
+        '<div class="mr-rest-list">' +
+        rest.map(function (name) { return '<span class="mr-chip">' + esc(name) + "</span>"; }).join("") +
+        "</div>";
+    }
+    return html;
   }
 
   function parseSlotNumbers(raw) {
@@ -205,7 +379,7 @@
       else if (isErr) alert(msg);
     }
 
-    this.sortBy = "scarce";
+    this.sortBy = "reco";
     this.showAllCand = false;
     this.current = null;
     this.sugList = [];
@@ -370,10 +544,13 @@
         return { name: name, up: up, score: BASE[self.current.grade] * 2 + up, st: stats[name] };
       });
 
+      var recoCmp = holderRankCompare(stats, upgrades, self.current.flower, self.current.grade);
       list.sort(function (a, b) {
-        if ((a.st.remain === 0) !== (b.st.remain === 0)) return a.st.remain === 0 ? 1 : -1;
-        if (self.sortBy === "up") return b.up - a.up || (b.st.scarcity || 0) - (a.st.scarcity || 0);
-        return (b.st.scarcity || 0) - (a.st.scarcity || 0) || b.up - a.up;
+        if (self.sortBy === "up") {
+          if ((a.st.remain === 0) !== (b.st.remain === 0)) return a.st.remain === 0 ? 1 : -1;
+          return b.up - a.up || a.name.localeCompare(b.name);
+        }
+        return recoCmp(a.name, b.name);
       });
       return { list: list, hidden: holders.length - pick.length, total: holders.length };
     };
@@ -384,7 +561,6 @@
       var list = r.list,
         g = self.current.grade,
         total = r.total;
-      var top = list.length ? list[0].st.scarcity || 0 : 0;
 
       var html =
         '<div class="mr-task-head">' +
@@ -414,18 +590,17 @@
 
       html +=
         '<div class="mr-sortbar">' +
-        '<button type="button" class="mr-btn mr-btn-sm' + (self.sortBy === "scarce" ? " mr-on" : "") + '" data-mr-action="sort" data-sort="scarce">기회 드문 순</button>' +
-        '<button type="button" class="mr-btn mr-btn-sm' + (self.sortBy === "up" ? " mr-on" : "") + '" data-mr-action="sort" data-sort="up">개량 순</button>' +
+        '<button type="button" class="mr-btn mr-btn-sm' + (self.sortBy === "reco" ? " mr-on" : "") + '" data-mr-action="sort" data-sort="reco">추천순</button>' +
+        '<button type="button" class="mr-btn mr-btn-sm' + (self.sortBy === "up" ? " mr-on" : "") + '" data-mr-action="sort" data-sort="up">순수 개량 순</button>' +
         "</div>";
 
       var gi = ORDER.indexOf(g);
       html += list
         .map(function (c, i) {
           var st = c.st,
-            done = st.remain === 0,
-            scar = st.scarcity === null ? "—" : Math.round(st.scarcity);
-          var isTight = !done && st.scarcity !== null && top > 0 && st.scarcity >= top * 0.7;
+            done = st.remain === 0;
           var over = st.bestIdx >= 0 && st.bestIdx < gi;
+          var gradeCnt = (st.perGrade && st.perGrade[g]) || 0;
           return (
             '<div class="mr-cand' + (done ? " mr-dim" : "") + '"' +
             (done ? "" : ' data-mr-action="assign" data-idx="' + i + '"') +
@@ -435,7 +610,7 @@
             (over ? ' <span class="mr-warn">! 최대 가능 등급보다 낮음</span>' : "") +
             (c.up ? " · 개량 +" + c.up : "") + "</div></div>" +
             '<div class="mr-num"><div class="mr-pt">' + c.score + "점</div>" +
-            '<div class="mr-sc' + (isTight ? " mr-tight" : "") + '">희소도 ' + scar + "</div></div></div>"
+            '<div class="mr-sc">' + esc(g) + " " + gradeCnt + "개 보유</div></div></div>"
           );
         })
         .join("");
@@ -450,7 +625,7 @@
       }
 
       html +=
-        '<p class="mr-note">희소도 = 남은 횟수를 채우려면 임무가 앞으로 몇 번 떠야 하는가. 높을수록 기회가 드무니 먼저 배정하는 게 이득입니다.<br>' +
+        '<p class="mr-note">추천순 = 이 등급이 최고 등급인 사람부터, 그중에서도 같은 등급을 적게 가진 사람부터. 개량 단계가 높을수록 그다음 우선순위입니다.<br>' +
         "이 임무보다 두 단계 이상 높은 등급이 가능한 사람은 뺍니다 — 그 사람 한 칸은 위 등급에 쓰는 게 낫습니다. " +
         "단, 눈높이 범위에 꽃이 " + SPARSE_MAX + "개 이하뿐인 사람은 한 칸 더 낮은 등급도 후보로 보여줍니다.</p>";
 
@@ -545,6 +720,13 @@
 
   // 다른 화면(app.html의 꽃 보유자 팝업 등)에서도 같은 희소도 계산을 쓸 수 있게 노출한다.
   MissionRegister.computeStats = computeStats;
+  MissionRegister.holderNote = holderNote;
+  MissionRegister.holderRankCompare = holderRankCompare;
+  MissionRegister.sameTier = sameTier;
+  MissionRegister.buildNoRerollList = buildNoRerollList;
+  MissionRegister.noRerollCardLabel = noRerollCardLabel;
+  MissionRegister.noRerollGridHtml = noRerollGridHtml;
+  MissionRegister.noRerollDetailHtml = noRerollDetailHtml;
 
   global.MissionRegister = MissionRegister;
 })(window);

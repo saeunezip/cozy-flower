@@ -332,70 +332,6 @@
         display: block;
       }
 
-      /* 아이콘 밑에 제일 필요한 사람 이름을 같이 보여준다. 한 줄에 5개 고정 —
-         화면 너비가 달라져도 칸 수는 그대로, 칸 크기만 늘고 준다. 이름·나머지
-         필요 인원 전체 목록은 눌렀을 때 아래에 나온다. */
-      .chips {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 8px;
-      }
-      .chip {
-        padding: 0;
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-family: inherit;
-        text-align: center;
-      }
-      .chip:hover {
-        filter: brightness(0.93);
-      }
-      .chip-img-wrap {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        border-radius: 11px;
-        overflow: hidden;
-      }
-      .chip.on .chip-img-wrap {
-        box-shadow: 0 0 0 2px #1f3b73 inset;
-      }
-      .chip.on img {
-        transform: scale(0.86);
-      }
-      .chip img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-      .chip .fb {
-        display: none;
-        position: absolute;
-        inset: 0;
-        border-radius: 11px;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-size: 10px;
-        line-height: 1.15;
-        color: #4a5560;
-        padding: 3px;
-        background: #f0f1f4;
-        word-break: keep-all;
-        overflow: hidden;
-      }
-      .chip-need {
-        font-size: 10.5px;
-        font-weight: bold;
-        color: #37474f;
-        margin-top: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
       /* 꽃 이름 자동완성 — 브라우저 기본 datalist 는 입력 전부터 197개를 펼쳐서
          모바일 키보드를 가린다. 그래서 두 글자부터 뜨도록 직접 만든다. */
       .sug-wrap {
@@ -473,45 +409,6 @@
         padding: 10px;
         font-size: 13px;
         color: #8b95a1;
-      }
-
-      .wish-detail {
-        margin-top: 12px;
-      }
-      .wish-detail .wd {
-        background: #f6f8fc;
-        border-radius: 10px;
-        padding: 11px 12px;
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      .wish-detail img {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        background: #eee;
-        flex: none;
-      }
-      .wish-detail .t {
-        flex: 1;
-        min-width: 0;
-      }
-      .wish-detail .t b {
-        font-size: 14.5px;
-      }
-      .wish-detail .need {
-        color: #1f3b73;
-        font-weight: bold;
-        font-size: 13px;
-        margin-top: 3px;
-      }
-      .wish-detail .who {
-        color: #78838f;
-        font-size: 12px;
-        margin-top: 3px;
-        word-break: keep-all;
-        line-height: 1.5;
       }
 
       /* 보드 현황 */
@@ -786,20 +683,22 @@
       </div>
 
       <div class="panel">
-        <h3 class="acc-head" onclick="toggleWish()">
-          발견하면 등록해 주세요
-          <span class="cnt-badge" id="wishCount">…</span>
-          <span class="arrow" id="wishArrow">▾</span>
+        <h3 class="acc-head" onclick="toggleNr()">
+          이 꽃은 새로고침 금지
+          <span class="cnt-badge" id="nrCount">…</span>
+          <span class="arrow" id="nrArrow">▾</span>
         </h3>
-        <div class="acc-body" id="wishBody">
-          <div id="wishList" class="chips">
-            <div class="loading">계산 중…</div>
+        <div class="acc-body" id="nrBody">
+          <div class="mr-nr-head">
+            남은 임무 횟수
+            <input type="text" inputmode="numeric" id="nrMinRemain" value="1" onchange="onNrFilterChange()" />
+            회 이상
           </div>
-          <div id="wishDetail" class="wish-detail"></div>
+          <div id="nrGrid"><div class="loading">계산 중…</div></div>
           <p class="note">
-            길드원별 추천 1~5순위 꽃 중에서 임무 배분이 필요한 꽃을
-            모았습니다.<br />
-            누르면 몇 명이 필요한지 보여 줍니다.
+            모두의 최고 등급인 꽃을 모았습니다. 아래 숫자보다 남은 임무가
+            적은 사람은 순위 계산에서 뺍니다.<br />
+            꽃을 누르면 순위를 자세히 볼 수 있습니다.
           </p>
         </div>
       </div>
@@ -830,6 +729,16 @@
         </div>
       </div>
 
+      <div id="nrOverlay" class="modal-overlay">
+        <div class="modal-box">
+          <div class="modal-head">
+            <span class="modal-title" id="nrModalTitle"></span>
+            <button class="modal-close" onclick="closeNrModal()">&times;</button>
+          </div>
+          <div class="modal-body" id="nrModalBody"></div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
           <h3 style="margin: 0;">임무 횟수</h3>
@@ -852,15 +761,6 @@
       var COUNT_WARN = 18; // 이 값을 넘으면 초록, 다 채우면(MAX_COUNT) 빨강
       var SHOW_SLOTS = 30; // 보드 현황에 한 번에 보여 줄 칸 수
 
-      var BASE = { "UR+": 30, UR: 28, SSR: 25, "SR+": 23, SR: 21 }; // 임무 기본 점수
-      var SHEET = { "UR+": 60, UR: 56, SSR: 50, "SR+": 46, SR: 42 }; // 시트의 꽃 점수 (추천 순위용)
-      var APPEAR = {
-        "UR+": 0.0102,
-        UR: 0.0435,
-        SSR: 0.0511,
-        "SR+": 0.0512,
-        SR: 0.0413,
-      };
       var ORDER = ["UR+", "UR", "SSR", "SR+", "SR"]; // 앞이 높은 등급
       var GCLASS = {
         "UR+": "g-ur-plus",
@@ -869,21 +769,20 @@
         "SR+": "g-sr-plus",
         SR: "g-sr",
       };
-      var WISH_TOP = 5; // 길드원마다 몇 순위까지 모을지
-      var WISH_SKIP = { UR: 1, "UR+": 1 }; // 이 등급은 목록에서 뺀다 (아래 예외만 빼고)
-      var UR_POOR_MAX = 4; // UR 이상을 이만큼 이하로 가진 사람은 그 UR·UR+ 를 도로 넣는다
       var SPARSE_MAX = 5; // 눈높이 범위(최고 등급+한 칸 아래) 보유가 이 이하면 한 칸 더 낮은 등급도 후보로 넣는다
 
       var snap = null,
         board = {},
         counts = {};
       var stats = {},
-        flowerIdx = {},
-        wish = [];
+        flowerIdx = {};
+      var nrList = [],
+        nrStats = {},
+        nrUpgrades = {};
       var me = "",
         pw = "";
       var showAllSlots = false,
-        wishOpen = false;
+        nrOpen = false;
 
       try {
         me = localStorage.getItem("boardMe") || "";
@@ -973,162 +872,14 @@
       /* ---------- 계산 ---------- */
       function prepare() {
         flowerIdx = {};
-        var gradeTotal = {},
-          holders = [];
         snap.flowers.forEach(function (f, i) {
           flowerIdx[f.name] = i;
-          gradeTotal[f.grade] = (gradeTotal[f.grade] || 0) + 1;
-        });
-        snap.flowers.forEach(function (f, i) {
-          var n = 0;
-          snap.members.forEach(function (m) {
-            if ((snap.unlocked[m] || "").charAt(i) === "1") n++;
-          });
-          holders[i] = n;
         });
 
-        stats = {};
-        var wishMap = {};
-
-        snap.members.forEach(function (name) {
-          var bits = snap.unlocked[name] || "";
-          var ups = snap.upgrades[name] || {};
-          var per = {},
-            total = 0;
-          snap.flowers.forEach(function (f, i) {
-            if (bits.charAt(i) === "1") {
-              per[f.grade] = (per[f.grade] || 0) + 1;
-              total++;
-            }
-          });
-
-          var best = "";
-          for (var i = 0; i < ORDER.length; i++) {
-            if (per[ORDER[i]]) {
-              best = ORDER[i];
-              break;
-            }
-          }
-          var bestIdx = ORDER.indexOf(best);
-
-          /*
-           * 기회 확률 p = Σ (등급 등장확률 × 그 등급 중 내가 해금한 비율)
-           * 단, "최고 등급 + 한 칸 아래" 만 센다 — 배분 규칙(2순위 필터)이
-           * 그 범위 밖 등급에는 임무를 절대 주지 않기 때문. 범위 밖까지 넣으면
-           * 하위 등급을 많이 가진 사람의 p 가 부풀어서, 정작 선택지가 좁은
-           * 사람(고등급만 조금 가진 사람)이 희소도 순위에서 밀린다.
-           * (2026-08-19 발견 → 2026-08-21 적용, 기능-임무보드.md 참고)
-           *
-           * spanHeld = 이 범위(최고 등급 + 한 칸 아래) 안에서 실제로 보유한 꽃 개수.
-           * p 계산에는 안 쓰지만, 후보 필터에서 "이 범위가 너무 좁은 사람"을
-           * 가려내는 데 쓴다 (candidates() 의 SPARSE_MAX 참고).
-           */
-          var p = 0;
-          var spanHeld = 0;
-          if (bestIdx >= 0) {
-            [ORDER[bestIdx], ORDER[bestIdx + 1]].forEach(function (g) {
-              if (!g) return;
-              spanHeld += per[g] || 0;
-              if (!gradeTotal[g] || !per[g]) return;
-              p += APPEAR[g] * (per[g] / gradeTotal[g]);
-            });
-          }
-
-          var used = counts[name] || 0;
-          var remain = Math.max(MAX_COUNT - used, 0);
-          stats[name] = {
-            unlocked: total,
-            p: p,
-            best: best,
-            bestIdx: bestIdx,
-            spanHeld: spanHeld,
-            used: used,
-            remain: remain,
-            // 희소도 = 남은 횟수 ÷ 기회 확률. 해금이 없으면 p=0 이라 낼 수 없다 -> null
-            scarcity: p > 0 ? remain / p : null,
-          };
-
-          // 이 사람에게 추천되는 꽃 상위 몇 개 (시트의 점수 공식과 같은 얼개)
-          var mine = [];
-          snap.flowers.forEach(function (f, i) {
-            if (bits.charAt(i) !== "1") return;
-            var up = ups[f.name] || 0;
-            mine.push({
-              i: i,
-              v:
-                (SHEET[f.grade] + up) * 10000 -
-                holders[i] * 100 -
-                (per[f.grade] || 0),
-            });
-          });
-          mine.sort(function (a, b) {
-            return b.v - a.v;
-          });
-
-          /*
-           * UR·UR+ 를 몇 개 안 가진 사람("UR 부족자")은 아래 예외에서 그
-           * UR·UR+ 만 따로 챙겨준다 — 이 사람은 거기서 이미 다뤄지므로,
-           * 여기 1~5순위 등급픽까지 더 얹으면 UR 옆에 SSR이 하나 더 붙어
-           * 정작 급한 UR의 존재감이 흐려진다. 그래서 UR 부족자는 건너뛴다.
-           */
-          var urCount = (per["UR"] || 0) + (per["UR+"] || 0);
-          var isUrPoor = urCount > 0 && urCount <= UR_POOR_MAX;
-
-          // 1~5순위 중 가장 높은 등급'만' 남긴다 — 그 등급이 여러 개(동점)면
-          // 전부 남긴다. 한 사람이 다섯 번씩 겹쳐 나오는 것만 줄이는 게 목적이지,
-          // 꼭 하나로 줄이려는 게 아니다.
-          if (!isUrPoor) {
-            var top5 = mine
-              .slice(0, WISH_TOP)
-              .map(function (x) { return snap.flowers[x.i]; })
-              .filter(function (f) { return !WISH_SKIP[f.grade]; }); // UR·UR+ 는 뺀다
-            if (top5.length) {
-              var bestGradeIdx = Math.min.apply(
-                null,
-                top5.map(function (f) { return ORDER.indexOf(f.grade); }),
-              );
-              top5
-                .filter(function (f) { return ORDER.indexOf(f.grade) === bestGradeIdx; })
-                .forEach(function (bestF) {
-                  if (!wishMap[bestF.name])
-                    wishMap[bestF.name] = { name: bestF.name, grade: bestF.grade, who: [] };
-                  if (wishMap[bestF.name].who.indexOf(name) < 0)
-                    wishMap[bestF.name].who.push(name);
-                });
-            }
-          }
-
-          /*
-           * 예외 — UR 이상을 몇 개 안 가진 사람의 UR·UR+ 는 도로 넣는다.
-           * UR 을 열몇 개 가진 사람은 UR 임무가 알아서 자주 걸리지만,
-           * 한두 개뿐인 사람은 그 한두 개가 떠야만 상위 등급을 할 수 있다.
-           * 그래서 이 꽃들은 놓치면 안 된다.
-           * 여기 붙는 이름은 '조건에 걸리는 사람' 뿐이다 — 다른 해금자는 넣지 않는다.
-           */
-          if (isUrPoor) {
-            snap.flowers.forEach(function (f, i) {
-              if (bits.charAt(i) !== "1" || !WISH_SKIP[f.grade]) return;
-              if (!wishMap[f.name])
-                wishMap[f.name] = { name: f.name, grade: f.grade, who: [] };
-              wishMap[f.name].ur = true;
-              if (wishMap[f.name].who.indexOf(name) < 0)
-                wishMap[f.name].who.push(name);
-            });
-          }
-        });
-
-        wish = Object.keys(wishMap).map(function (k) {
-          return wishMap[k];
-        });
-        // UR 예외 건을 맨 앞에 — 56~60점짜리라 놓치면 손해가 제일 크다
-        wish.sort(function (a, b) {
-          return (
-            (b.ur ? 1 : 0) - (a.ur ? 1 : 0) ||
-            b.who.length - a.who.length ||
-            ORDER.indexOf(a.grade) - ORDER.indexOf(b.grade) ||
-            a.name.localeCompare(b.name)
-          );
-        });
+        // 길드원별 최고 등급·희소도 등은 mission-register.js의 공용 계산을 그대로 쓴다
+        // ("이 꽃은 새로고침 금지" 목록도 같은 계산을 쓰므로 두 번 만들 필요가 없다).
+        stats = MissionRegister.computeStats(snap, counts).stats;
+        prepareNr();
 
         document.getElementById("me").innerHTML =
           '<option value="">내 이름 고르기</option>' +
@@ -1214,144 +965,55 @@
         return true;
       }
 
-      /* ---------- 발견하면 등록해 주세요 ---------- */
-      function toggleWish() {
-        wishOpen = !wishOpen;
-        document.getElementById("wishBody").className =
-          "acc-body" + (wishOpen ? " open" : "");
-        document.getElementById("wishArrow").textContent = wishOpen ? "▴" : "▾";
+      /* ---------- 이 꽃은 새로고침 금지 ---------- */
+      function toggleNr() {
+        nrOpen = !nrOpen;
+        document.getElementById("nrBody").className =
+          "acc-body" + (nrOpen ? " open" : "");
+        document.getElementById("nrArrow").textContent = nrOpen ? "▴" : "▾";
       }
 
-      var wishPick = -1;
-
-      // who 중에 희소도(remain÷p)가 가장 높은 사람 — 지금 이 꽃을 가장 필요로 하는 사람.
-      // 희소도를 낼 수 없는 사람(p=0)뿐이면 그냥 첫 번째 사람을 보여준다.
-      function topNeederOf(who) {
-        var best = null,
-          bestScar = -1;
-        (who || []).forEach(function (name) {
-          var st = stats[name];
-          var s = st && st.scarcity;
-          if (s === null || s === undefined) return;
-          if (s > bestScar) {
-            bestScar = s;
-            best = name;
-          }
-        });
-        return best || (who && who[0]) || "";
+      function nrMinRemain() {
+        var n = parseInt(document.getElementById("nrMinRemain").value, 10);
+        return isNaN(n) || n < 0 ? 1 : n;
       }
 
-      function renderWish() {
-        document.getElementById("wishCount").textContent = wish.length + "개";
-        if (!wish.length) {
-          document.getElementById("wishList").innerHTML =
-            '<div class="empty-note">해당하는 꽃이 없습니다.</div>';
-          document.getElementById("wishDetail").innerHTML = "";
-          return;
-        }
-        document.getElementById("wishList").innerHTML = wish
-          .map(function (w, i) {
-            var need = topNeederOf(w.who);
-            return (
-              '<button class="chip' +
-              (i === wishPick ? " on" : "") +
-              '" ' +
-              'onclick="pickWish(' +
-              i +
-              ')" title="' +
-              esc(w.name) +
-              " · " +
-              esc(w.grade) +
-              '">' +
-              '<div class="chip-img-wrap">' +
-              '<img src="' +
-              imgUrl(w.name) +
-              '" alt="' +
-              esc(w.name) +
-              '" ' +
-              'onerror="this.style.display=&quot;none&quot;;' +
-              'this.nextElementSibling.style.display=&quot;flex&quot;">' +
-              '<span class="fb">' +
-              esc(w.name) +
-              "</span>" +
-              "</div>" +
-              (need ? '<div class="chip-need">' + esc(need) + "</div>" : "") +
-              "</button>"
-            );
-          })
-          .join("");
-        renderWishDetail();
+      function prepareNr() {
+        var r = MissionRegister.buildNoRerollList(snap, counts, nrMinRemain());
+        nrList = r.list;
+        nrStats = r.stats;
+        nrUpgrades = r.upgrades;
       }
 
-      function renderWishDetail() {
-        var box = document.getElementById("wishDetail");
-        var w = wish[wishPick];
-        if (!w) {
-          box.innerHTML = "";
-          return;
-        }
-
-        // 이미 보드에 올라와 있는지도 같이 알려 준다
-        var onBoard = Object.keys(board)
-          .map(function (k) {
-            return board[k];
-          })
-          .filter(function (s) {
-            return s.flower === w.name;
-          })
-          .map(function (s) {
-            return s.no + "번" + (s.member ? "(" + s.member + ")" : "");
-          });
-
-        box.innerHTML =
-          '<div class="wd">' +
-          '<img src="' +
-          imgUrl(w.name) +
-          '" alt="" onerror="this.style.visibility=&quot;hidden&quot;">' +
-          '<div class="t">' +
-          "<b>" +
-          esc(w.name) +
-          "</b> " +
-          '<span class="gtag ' +
-          (GCLASS[w.grade] || "g-none") +
-          '">' +
-          esc(w.grade) +
-          "</span>" +
-          '<div class="need">' +
-          w.who.length +
-          "명이 필요로 합니다</div>" +
-          '<div class="who">' +
-          esc(w.who.join(", ")) +
-          "</div>" +
-          (w.ur
-            ? '<div class="who">UR 우선 배분이 필요한 꽃입니다.</div>'
-            : "") +
-          (onBoard.length
-            ? '<div class="who">이미 보드에 있음 · ' +
-              esc(onBoard.join(", ")) +
-              "</div>"
-            : "") +
-          '<div style="margin-top:9px;"><button class="btn sm on" onclick="useWish()">' +
-          "이 꽃으로 등록하기</button></div>" +
-          "</div>" +
-          "</div>";
+      function onNrFilterChange() {
+        prepareNr();
+        renderNr();
       }
 
-      function pickWish(i) {
-        wishPick = wishPick === i ? -1 : i;
-        renderWish();
+      function renderNr() {
+        document.getElementById("nrCount").textContent = nrList.length + "개";
+        document.getElementById("nrGrid").innerHTML =
+          MissionRegister.noRerollGridHtml(nrList, imgUrl);
       }
 
-      function useWish() {
-        var w = wish[wishPick];
-        if (!w) return;
-        document.getElementById("slotNo").value = "";
-        missionReg.setFlowerAndLookup(w.name);
-        document.getElementById("slotNo").focus();
-        document
-          .getElementById("candBox")
-          .scrollIntoView({ behavior: "smooth", block: "start" });
+      function openNrModal(i) {
+        var entry = nrList[i];
+        if (!entry) return;
+        document.getElementById("nrModalTitle").textContent = entry.name + " 순위";
+        document.getElementById("nrModalBody").innerHTML =
+          MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
+        document.getElementById("nrOverlay").classList.add("show");
       }
+      function closeNrModal() {
+        document.getElementById("nrOverlay").classList.remove("show");
+      }
+      document.getElementById("nrOverlay").addEventListener("click", function (ev) {
+        if (ev.target === this) closeNrModal();
+      });
+      document.getElementById("nrGrid").addEventListener("click", function (ev) {
+        var el = ev.target.closest("[data-mr-nr-idx]");
+        if (el) openNrModal(parseInt(el.getAttribute("data-mr-nr-idx"), 10));
+      });
 
       /* ---------- 보드 현황 ---------- */
       function slotList() {
@@ -1685,7 +1347,7 @@
       /* ---------- ---------- */
       function renderAll() {
         renderMyCount();
-        renderWish();
+        renderNr();
         renderGrid();
         renderCounts();
         if (missionReg.current) missionReg.renderCandidates();

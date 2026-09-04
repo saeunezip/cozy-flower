@@ -101,6 +101,7 @@
     #qrNo { width: 110px; flex: none; }
     .qr-flower-wrap { position: relative; flex: 1; min-width: 0; }
     .qr-flower-wrap input { width: 100%; padding-right: 30px; }
+    .qr-section h3 .nr-badge { background: #e8ebf2; color: #1F3B73; border-radius: 20px; padding: 1px 9px; font-size: 12px; font-weight: normal; }
 
     /* ---- 바로가기 2x2 그리드 (흰 카드로 통일) ---- */
     .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -314,6 +315,17 @@
           <div id="qrCandBox"></div>
         </div>
 
+        <div class="qr-section">
+          <h3>이 꽃은 새로고침 금지 <span class="nr-badge" id="nrCount"></span></h3>
+          <div class="mr-nr-head">
+            남은 임무 횟수
+            <input type="text" inputmode="numeric" id="nrMinRemain" value="1" onchange="renderNoReroll()" />
+            회 이상
+          </div>
+          <div id="nrGrid"><div class="loading">불러오는 중…</div></div>
+          <p class="hint" style="margin-top:8px;">꽃을 누르면 순위를 자세히 볼 수 있습니다</p>
+        </div>
+
         <div class="preview-section">
           <div class="preview-head">
             <div class="preview-head-left">
@@ -467,6 +479,7 @@
     var flowerIndex = null;   // 꽃 이름 -> { i, grade }
     var allMemberData = [], allTaskData = [], gradeOf = {};
     var bestGradeCache = {};  // 이름 -> 그 사람이 보유한 꽃 중 최고 등급 (board.html의 stats.best와 같은 개념)
+    var nrList = [], nrStats = {}, nrUpgrades = {};   // "이 꽃은 새로고침 금지" 목록/통계 — board.html과 같은 mission-register.js 계산을 씀
 
     function runHomeMode() {
       loadHomeData();
@@ -492,9 +505,12 @@
         flowerIndex = {};
         (snap.flowers || []).forEach(function (f, i) { flowerIndex[f.name] = { i: i, grade: f.grade }; });
 
+        modalCache = { member: {}, flower: {} }; // 최신 데이터로 다시 받았으니 이전 팝업 캐시는 버린다
+
         renderMeMenu();
         renderCountBadge();
         renderPreview();
+        renderNoReroll();
 
         var idxSnap = indexRes && indexRes.ok && indexRes.snapshot;
         if (idxSnap && Array.isArray(idxSnap.guild) && Array.isArray(idxSnap.task)) {
@@ -788,8 +804,8 @@
       });
       return list;
     }
-    // 보유자를 희소도(임무 보드와 같은 우선순위 개념) 순으로 정렬한다 — 이 꽃을 누구에게
-    // 먼저 맡기는 게 좋은지 한눈에 보이게. 희소도를 낼 수 없는 사람(p=0)은 맨 뒤로.
+    // 보유자를 "이 꽃은 새로고침 금지"와 같은 순위(유일한 최고등급 우선 > 개량)로 정렬한다 —
+    // 이 꽃을 누구에게 먼저 맡기는 게 좋은지 한눈에 보이게.
     function flowerHoldersFromSnapshot(flowerName) {
       var idx = flowerIndex[flowerName];
       if (!idx) return null;
@@ -799,16 +815,39 @@
         if (bits && bits.charAt(idx.i) === '1') holders.push(name);
       });
       var computed = MissionRegister.computeStats(snap, counts);
-      holders.sort(function (a, b) {
-        var sa = computed.stats[a] ? computed.stats[a].scarcity : null;
-        var sb = computed.stats[b] ? computed.stats[b].scarcity : null;
-        if (sa === null && sb === null) return a.localeCompare(b);
-        if (sa === null) return 1;
-        if (sb === null) return -1;
-        return sb - sa;
-      });
-      return holders;
+      var upgrades = snap.upgrades || {};
+      holders.sort(MissionRegister.holderRankCompare(computed.stats, upgrades, flowerName, idx.grade));
+      return { holders: holders, stats: computed.stats, upgrades: upgrades, flowerName: flowerName, grade: idx.grade };
     }
+
+    /* ---------- 이 꽃은 새로고침 금지 ---------- */
+    function nrMinRemain() {
+      var n = parseInt(document.getElementById('nrMinRemain').value, 10);
+      return isNaN(n) || n < 0 ? 1 : n;
+    }
+    function renderNoReroll() {
+      if (!snap) return;
+      var r = MissionRegister.buildNoRerollList(snap, counts, nrMinRemain());
+      nrList = r.list;
+      nrStats = r.stats;
+      nrUpgrades = r.upgrades;
+      document.getElementById('nrCount').textContent = nrList.length + '개';
+      document.getElementById('nrGrid').innerHTML = MissionRegister.noRerollGridHtml(nrList, imgUrl);
+    }
+    function openNoRerollModal(i) {
+      var entry = nrList[i];
+      if (!entry) return;
+      hideTip();
+      openModalHtml(
+        '<img class="modal-title-thumb" src="' + imgUrl(entry.name) + '" alt="" onerror="this.style.display=\'none\'">' +
+        '<span>' + esc(entry.name) + ' 순위</span>',
+      );
+      document.getElementById('modalBody').innerHTML = MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
+    }
+    document.getElementById('nrGrid').addEventListener('click', function (ev) {
+      var el = ev.target.closest('[data-mr-nr-idx]');
+      if (el) openNoRerollModal(parseInt(el.getAttribute('data-mr-nr-idx'), 10));
+    });
 
     var modalCache = { member: {}, flower: {} };
 
@@ -860,20 +899,27 @@
       );
       if (modalCache.flower[name]) { renderFlowerModal(modalCache.flower[name]); return; }
       if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
-      var list = flowerHoldersFromSnapshot(name);
-      if (list == null) { modalError('일치하는 꽃을 찾지 못했습니다.'); return; }
-      modalCache.flower[name] = list;
-      renderFlowerModal(list);
+      var r = flowerHoldersFromSnapshot(name);
+      if (r == null) { modalError('일치하는 꽃을 찾지 못했습니다.'); return; }
+      modalCache.flower[name] = r;
+      renderFlowerModal(r);
     }
-    // list는 희소도(우선순위) 순으로 이미 정렬돼 있다 — 앞 5명은 순위를 붙여 보여주고,
-    // 나머지는 그 아래 칩으로만 나열한다.
-    function renderFlowerModal(list) {
+    // holders는 순위 순으로 이미 정렬돼 있다 — 앞 5명은 순위를 붙여 보여주고(완전 동순위면
+    // 같은 번호), 나머지는 그 아래 칩으로만 나열한다.
+    function renderFlowerModal(r) {
       var body = document.getElementById('modalBody');
-      if (!list.length) { body.innerHTML = '<div class="modal-loading">보유한 길드원이 없습니다.</div>'; return; }
-      var top = list.slice(0, 5);
-      var rest = list.slice(5);
+      var holders = r.holders;
+      if (!holders.length) { body.innerHTML = '<div class="modal-loading">보유한 길드원이 없습니다.</div>'; return; }
+      var top = holders.slice(0, 5);
+      var rest = holders.slice(5);
+      var ranks = [];
+      for (var i = 0; i < top.length; i++) {
+        if (i === 0) ranks.push(1);
+        else if (MissionRegister.sameTier(top[i - 1], top[i], r.stats, r.upgrades, r.flowerName, r.grade)) ranks.push(ranks[i - 1]);
+        else ranks.push(i + 1);
+      }
       var html = top.map(function (n, i) {
-        return '<div class="mholder-rank-row"><span class="mholder-rank-badge">' + (i + 1) + '순위</span>' + esc(n) + '</div>';
+        return '<div class="mholder-rank-row"><span class="mholder-rank-badge">' + ranks[i] + '순위</span>' + esc(n) + '</div>';
       }).join('');
       if (rest.length) {
         html += '<div class="mholder-rest-label">나머지 ' + rest.length + '명</div>' +
