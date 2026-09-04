@@ -349,6 +349,12 @@
 
         <div id="memberTab" class="tab-content active">
           <div class="tools">
+            <select id="memberSortSelect" onchange="filterData()">
+              <option value="unlock_desc">보유 많은 순</option>
+              <option value="unlock_asc">보유 적은 순</option>
+              <option value="remain_desc">남은 임무 많은 순</option>
+              <option value="remain_asc">남은 임무 적은 순</option>
+            </select>
             <input type="text" id="memberSearchInput" placeholder="길드원 이름 검색" oninput="filterData()">
           </div>
           <p class="hint">이름을 누르면 보유 현황 · 꽃 아이콘을 누르면 이름이 나옵니다</p>
@@ -950,14 +956,28 @@
                (f.plus ? '<span class="plus">+' + f.plus + '</span>' : '') +
              '</div>';
     }
+    // 보유순(많은/적은) · 남은 임무횟수순(많은/적은) — memberSortSelect 값에 따라 정렬 기준만 바꾼다.
+    function sortMemberData(data) {
+      var mode = document.getElementById('memberSortSelect').value;
+      return data.slice().sort(function (a, b) {
+        var nameA = String(a[0]), nameB = String(b[0]);
+        var diff;
+        if (mode === 'remain_desc' || mode === 'remain_asc') {
+          var ra = MAX_COUNT - (counts[nameA] || 0);
+          var rb = MAX_COUNT - (counts[nameB] || 0);
+          diff = mode === 'remain_desc' ? rb - ra : ra - rb;
+        } else {
+          var na = parseInt(String(a[1]).replace(/[^0-9]/g, ''), 10) || 0;
+          var nb = parseInt(String(b[1]).replace(/[^0-9]/g, ''), 10) || 0;
+          diff = mode === 'unlock_asc' ? na - nb : nb - na;
+        }
+        return diff !== 0 ? diff : nameA.localeCompare(nameB);
+      });
+    }
     function renderMemberData(data) {
       var res = document.getElementById('memberResult');
       if (!data || !data.length) { res.innerHTML = '<div class="loading">검색 결과가 없습니다.</div>'; return; }
-      var sorted = data.slice().sort(function (a, b) {
-        var na = parseInt(String(a[1]).replace(/[^0-9]/g, ''), 10) || 0;
-        var nb = parseInt(String(b[1]).replace(/[^0-9]/g, ''), 10) || 0;
-        return (nb !== na) ? nb - na : String(a[0]).localeCompare(String(b[0]));
-      });
+      var sorted = sortMemberData(data);
       var html = '';
       var totalMin = 0, totalMax = 0, anyScore = false;
       sorted.forEach(function (row) {
@@ -971,10 +991,11 @@
           totalMax += range.max;
           anyScore = true;
         }
+        var remain = MAX_COUNT - (counts[row[0]] || 0);
         html += '<div class="mrow">' +
                   '<div class="mhead">' +
                     '<span class="mname" data-member="' + esc(row[0]) + '">' + esc(row[0]) + '</span>' +
-                    '<span class="munlock">보유 ' + esc(row[1]) + '개</span>' +
+                    '<span class="munlock">보유 ' + esc(row[1]) + '개 · 남은 ' + remain + '회</span>' +
                     scoreHtml +
                   '</div>' +
                   '<div class="slots">' + slots + '</div>' +

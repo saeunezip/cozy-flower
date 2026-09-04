@@ -613,16 +613,37 @@
         color: #152c57;
       }
       .cnt .val {
+        display: flex;
+        align-items: center;
+        gap: 3px;
         width: 52px;
+      }
+      .cnt .val-input {
+        width: 32px;
         text-align: center;
         font-size: 15px;
         font-weight: bold;
+        font-family: inherit;
+        color: #263238;
+        border: 1px solid #cfd4dc;
+        border-radius: 6px;
+        padding: 3px 0;
       }
-      .cnt .val.warm {
+      .cnt .val-input:focus {
+        outline: 2px solid #90a4d4;
+        outline-offset: -1px;
+      }
+      .cnt .val-input.warm {
         color: #2e7d5b;
+        border-color: #2e7d5b;
       }
-      .cnt .val.full {
+      .cnt .val-input.full {
         color: #c62828;
+        border-color: #c62828;
+      }
+      .cnt .val-max {
+        font-size: 13px;
+        color: #78838f;
       }
       .stepper {
         display: flex;
@@ -1574,12 +1595,19 @@
               esc(name) +
               (isMe ? " (나)" : "") +
               "</span>" +
-              '<span class="val' +
+              '<span class="val">' +
+              '<input type="text" inputmode="numeric" class="val-input' +
               (full ? " full" : warm ? " warm" : "") +
-              '">' +
+              '" value="' +
               st.used +
-              "/" +
+              '" onchange="setCountAt(' +
+              i +
+              ', this.value)" ' +
+              'onkeydown="if(event.key===\'Enter\') this.blur();" ' +
+              'onfocus="this.select()">' +
+              '<span class="val-max">/' +
               MAX_COUNT +
+              "</span>" +
               "</span>" +
               '<span class="stepper">' +
               '<button onclick="bumpAt(' +
@@ -1603,6 +1631,24 @@
         pending = {};
       function bumpAt(i, delta) {
         bump(snap.members[i], delta);
+      }
+
+      // 키보드로 숫자를 직접 입력했을 때 — delta 로 바꿔서 bump() 를 그대로 재사용한다
+      // (연타 방지 디바운스·저장 로직이 이미 거기 다 있으니 중복으로 짜지 않는다).
+      function setCountAt(i, raw) {
+        var name = snap.members[i];
+        var n = parseInt(raw, 10);
+        if (isNaN(n)) {
+          renderCounts();
+          return;
+        }
+        n = Math.min(Math.max(n, 0), MAX_COUNT);
+        var cur = pending[name] !== undefined ? pending[name] : counts[name] || 0;
+        if (n === cur) {
+          renderCounts();
+          return;
+        }
+        bump(name, n - cur);
       }
 
       function bump(name, delta) {
