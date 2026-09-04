@@ -996,19 +996,38 @@
           MissionRegister.noRerollGridHtml(nrList, imgUrl);
       }
 
+      var nrModalEntry = null;
       function openNrModal(i) {
         var entry = nrList[i];
         if (!entry) return;
+        nrModalEntry = entry;
         document.getElementById("nrModalTitle").textContent = entry.name + " 순위";
         document.getElementById("nrModalBody").innerHTML =
           MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
         document.getElementById("nrOverlay").classList.add("show");
       }
       function closeNrModal() {
+        nrModalEntry = null;
         document.getElementById("nrOverlay").classList.remove("show");
       }
       document.getElementById("nrOverlay").addEventListener("click", function (ev) {
         if (ev.target === this) closeNrModal();
+      });
+      document.getElementById("nrModalBody").addEventListener("click", function (ev) {
+        var el = ev.target.closest("[data-mr-nr-name]");
+        if (!el || !nrModalEntry) return;
+        MissionRegister.quickAssign({
+          apiUrl: API,
+          flower: nrModalEntry.name,
+          grade: nrModalEntry.grade,
+          member: el.getAttribute("data-mr-nr-name"),
+          board: board,
+          say: say,
+          onDone: function () {
+            closeNrModal();
+            reload();
+          },
+        });
       });
       document.getElementById("nrGrid").addEventListener("click", function (ev) {
         var el = ev.target.closest("[data-mr-nr-idx]");

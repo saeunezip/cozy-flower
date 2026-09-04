@@ -94,9 +94,13 @@
       ".mr-nr-fb{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.15;color:#4a5560;padding:3px;word-break:keep-all}" +
       ".mr-nr-name{font-size:10.5px;font-weight:bold;color:#37474f;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".mr-nr-empty{color:#8b95a1;font-size:13px;padding:10px 2px}" +
-      ".mr-rank-lead{color:#1f3b73;font-weight:bold;font-size:13.5px;margin-bottom:8px}" +
-      ".mr-rank-row{display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:14px;font-weight:bold;color:#263238;border-bottom:1px solid #f1f2f5}" +
+      ".mr-rank-lead{color:#1f3b73;font-weight:bold;font-size:13.5px}" +
+      ".mr-rank-hint{color:#90a4ae;font-size:12px;margin:2px 0 8px}" +
+      ".mr-rank-row{display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:14px;font-weight:bold;color:#263238;border-bottom:1px solid #f1f2f5;cursor:pointer;border-radius:8px}" +
+      ".mr-rank-row:hover{background:#f5f7fb}" +
       ".mr-rank-badge{flex:none;min-width:40px;text-align:center;font-size:11px;font-weight:bold;color:#fff;background:#1f3b73;border-radius:20px;padding:3px 6px}" +
+      ".mr-rank-row-solo .mr-rank-badge{background:#c62828}" +
+      ".mr-rank-row-solo .mr-rank-note{color:#c62828;font-weight:bold}" +
       ".mr-rank-name{flex:1;min-width:0}" +
       ".mr-rank-note{color:#78838f;font-size:12px;font-weight:normal;white-space:nowrap}" +
       ".mr-rest-label{font-size:12px;color:#90a4ae;margin:12px 2px 6px;font-weight:bold}" +
@@ -300,14 +304,18 @@
         ranks.push(ri + 1);
       }
     }
-    var html = '<div class="mr-rank-lead">' + entry.holders.length + "명의 최고등급 꽃입니다</div>";
+    var html =
+      '<div class="mr-rank-lead">' + entry.holders.length + "명의 최고등급 꽃입니다</div>" +
+      '<div class="mr-rank-hint">이름을 눌러 바로 임무 보드에 등록할 수 있습니다</div>';
     html += top
       .map(function (name, i) {
         var st = stats[name] || {};
         var up = (upgrades[name] || {})[entry.name] || 0;
         var note = holderNote(st, entry.grade, up);
+        var solo = (st.perGrade && st.perGrade[entry.grade]) === 1;
         return (
-          '<div class="mr-rank-row"><span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
+          '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
+          '<span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
           '<span class="mr-rank-name">' + esc(name) + "</span>" +
           '<span class="mr-rank-note">' + esc(note) + "</span>" +
           "</div>"
@@ -350,6 +358,44 @@
       .then(function (j) {
         if (!j.ok) throw new Error(j.error || "요청이 거부됐습니다.");
         return j;
+      });
+  }
+
+  // "이 꽃은 새로고침 금지" 팝업에서 이름을 눌렀을 때 쓰는 최소 배정 흐름 — 후보 목록을
+  // 다시 보여줄 필요 없이(이미 팝업에서 누가 받을지 정해졌으므로) 번호만 물어보고 바로 등록한다.
+  // opts: { apiUrl, flower, grade, member, board(선택 — 있으면 충돌 확인), say(선택), onDone(선택) }
+  function quickAssign(opts) {
+    var raw = prompt(
+      opts.flower + "을(를) " + opts.member + " 임무로 배정합니다.\n임무 번호를 적어 주세요. (여러 개면 \"15, 17\"처럼 콤마로 구분)",
+    );
+    if (raw === null) return;
+    var nos = parseSlotNumbers(raw);
+    if (!nos.length) {
+      if (opts.say) opts.say("임무 번호를 1~66 사이로 넣어 주세요.", true);
+      return;
+    }
+    var b = opts.board || {};
+    var conflicts = nos
+      .filter(function (no) {
+        return b[String(no)];
+      })
+      .map(function (no) {
+        var prev = b[String(no)];
+        return no + "번(" + prev.flower + (prev.member ? " → " + prev.member : "") + ")";
+      });
+    if (conflicts.length && !confirm("이미 있는 칸이 있습니다: " + conflicts.join(", ") + "\n\n덮어쓸까요?")) return;
+
+    Promise.all(
+      nos.map(function (no) {
+        return apiPost(opts.apiUrl, { action: "assign", no: no, flower: opts.flower, grade: opts.grade, member: opts.member });
+      }),
+    )
+      .then(function () {
+        if (opts.say) opts.say(nos.map(function (n) { return n + "번"; }).join(", ") + " · " + opts.flower + " → " + opts.member);
+        if (opts.onDone) opts.onDone();
+      })
+      .catch(function (e) {
+        if (opts.say) opts.say(e.message, true);
       });
   }
 
@@ -727,6 +773,7 @@
   MissionRegister.noRerollCardLabel = noRerollCardLabel;
   MissionRegister.noRerollGridHtml = noRerollGridHtml;
   MissionRegister.noRerollDetailHtml = noRerollDetailHtml;
+  MissionRegister.quickAssign = quickAssign;
 
   global.MissionRegister = MissionRegister;
 })(window);
