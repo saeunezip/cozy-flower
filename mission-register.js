@@ -87,14 +87,18 @@
       ".mr-nr-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#37474f}" +
       ".mr-nr-head input{width:52px;padding:6px 8px;border:1px solid #cfd4dc;border-radius:8px;font-size:13px;text-align:center;font-family:inherit}" +
       ".mr-nr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}" +
-      ".mr-nr-card{padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:center}" +
+      // min-width:0 없으면 .mr-nr-name의 white-space:nowrap 텍스트("김연유 (외 5명)" 같은 긴 라벨)가
+      // 그 열의 최소 폭을 밀어 올려서, 같은 열의 다른 행 카드까지 전부 커지고 나머지 열은 좁아진다
+      // (그리드 기본값은 1fr도 min-width:auto라 내용물 크기를 최소 보장함 — 실제 사고 원인, 2026-09-04).
+      ".mr-nr-card{min-width:0;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:center}" +
       ".mr-nr-card:hover{filter:brightness(.93)}" +
       ".mr-nr-img-wrap{position:relative;width:100%;aspect-ratio:1/1;border-radius:11px;overflow:hidden;background:#f0f1f4}" +
       ".mr-nr-img-wrap img{width:100%;height:100%;object-fit:cover;display:block}" +
       ".mr-nr-fb{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.15;color:#4a5560;padding:3px;word-break:keep-all}" +
       ".mr-nr-name{font-size:10.5px;font-weight:bold;color:#37474f;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".mr-nr-empty{color:#8b95a1;font-size:13px;padding:10px 2px}" +
-      ".mr-nr-star{position:absolute;top:3px;right:3px;font-size:14px;line-height:1;filter:drop-shadow(0 0 2px rgba(0,0,0,.5))}" +
+      ".mr-nr-star{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff3cd;" +
+      "display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)}" +
       ".mr-rank-lead{color:#1f3b73;font-weight:bold;font-size:13.5px}" +
       ".mr-rank-hint{color:#90a4ae;font-size:12px;margin:2px 0 8px}" +
       ".mr-rank-row{display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:14px;font-weight:bold;color:#263238;border-bottom:1px solid #f1f2f5;cursor:pointer;border-radius:8px}" +
