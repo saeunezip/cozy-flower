@@ -276,7 +276,17 @@
       entry.rank1Tie = tie;
       // 1순위가 유일 최고등급이면(=이 꽃에 유일 최고등급 보유자가 있으면) 카드에 별을 띄운다.
       entry.hasSolo = (stats[entry.holders[0]] || {}).bestCount === 1;
+      // 보유자 중 아무도 "이 꽃이 내 최고 점수 꽃"이 아니면(다들 다른 꽃에 더 밀린다면)
+      // 이 꽃은 진짜 최우선은 아니라고 보고 목록에서 아예 뺀다.
+      entry.hasBestScore = entry.holders.some(function (name) {
+        var up = (upgrades[name] || {})[entry.name] || 0;
+        return isPersonBestScore(stats[name], entry.grade, up);
+      });
       return entry;
+    });
+
+    list = list.filter(function (entry) {
+      return entry.hasBestScore;
     });
 
     list.sort(function (a, b) {
