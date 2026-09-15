@@ -106,6 +106,8 @@
       ".mr-rank-badge{flex:none;min-width:40px;text-align:center;font-size:11px;font-weight:bold;color:#fff;background:#1f3b73;border-radius:20px;padding:3px 6px}" +
       ".mr-rank-row-solo .mr-rank-badge{background:#c62828}" +
       ".mr-rank-row-solo .mr-rank-note{color:#c62828;font-weight:bold}" +
+      ".mr-rank-row-score-solo .mr-rank-badge{background:#e0aa00;color:#3e2f00}" +
+      ".mr-rank-row-score-solo .mr-rank-note{color:#9a7100;font-weight:bold}" +
       ".mr-rank-name{flex:1;min-width:0}" +
       ".mr-rank-star-badge{flex:none;font-size:11px;font-weight:bold;color:#8a6100;background:#fff3cd;border-radius:20px;padding:2px 7px;white-space:nowrap}" +
       ".mr-rank-note{color:#78838f;font-size:12px;font-weight:normal;white-space:nowrap}" +
@@ -139,13 +141,19 @@
       var ups = (snap.upgrades && snap.upgrades[name]) || {};
       var per = {},
         total = 0,
-        bestScore = 0;
+        bestScore = 0,
+        bestScoreCount = 0;
       snap.flowers.forEach(function (f, i) {
         if (bits.charAt(i) === "1") {
           per[f.grade] = (per[f.grade] || 0) + 1;
           total++;
           var score = (BASE[f.grade] || 0) * 2 + (ups[f.name] || 0);
-          if (score > bestScore) bestScore = score;
+          if (score > bestScore) {
+            bestScore = score;
+            bestScoreCount = 1;
+          } else if (score === bestScore) {
+            bestScoreCount++;
+          }
         }
       });
       var best = "";
@@ -176,6 +184,7 @@
         bestCount: bestIdx >= 0 ? per[best] || 0 : 0, // 최고 등급을 몇 개나 가졌는지 — 1개뿐이면 "유일한 최고등급"
         perGrade: per, // 등급별 보유 개수 — 최고 등급이 아닌 등급도 조회 가능(눈높이 예외 후보용)
         bestScore: bestScore, // 보유한 모든 꽃 중 가장 높은 점수(등급+개량) — "본인 최고 점수 꽃" 판별용
+        bestScoreCount: bestScoreCount, // 최고점수인 꽃 개수 — 1개뿐이면 "점수 유일 최고점수"
         spanHeld: spanHeld,
         used: used,
         remain: remain,
@@ -205,9 +214,10 @@
    * ① 남은 임무 0회 → 맨 뒤
    * ② 이 꽃이 그 사람의 최고 등급이 아니면 → 뒤 (더 좋은 선택지가 있으므로)
    * ③ 최고 등급을 유일하게(1개만) 가진 사람 — 무조건 최우선
-   * ④ 그 외에는 이 꽃의 개량 단계로만 비교 — 높은 사람 우선
-   * ⑤ 개량까지 같으면 그 등급 보유 개수 적은 사람 우선 (동점 폭을 줄이는 마지막 기준)
-   * ⑥ 이름 (그래도 같으면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
+   * ④ 이 꽃만 본인의 최고점수인 사람 — 그다음 우선
+   * ⑤ 그 외에는 이 꽃의 개량 단계로만 비교 — 높은 사람 우선
+   * ⑥ 개량까지 같으면 그 등급 보유 개수 적은 사람 우선 (동점 폭을 줄이는 마지막 기준)
+   * ⑦ 이름 (그래도 같으면 화면에서 "공동 순위"로 묶어 보여준다 — sameTier 참고)
    */
   function holderRankCompare(stats, upgrades, flowerName, flowerGrade) {
     upgrades = upgrades || {};
@@ -225,6 +235,9 @@
       if (asolo !== bsolo) return asolo ? -1 : 1;
       var upA = (upgrades[a] || {})[flowerName] || 0;
       var upB = (upgrades[b] || {})[flowerName] || 0;
+      var ascoreSolo = isPersonBestScore(A, flowerGrade, upA) && (A.bestScoreCount || 0) === 1;
+      var bscoreSolo = isPersonBestScore(B, flowerGrade, upB) && (B.bestScoreCount || 0) === 1;
+      if (ascoreSolo !== bscoreSolo) return ascoreSolo ? -1 : 1;
       if (upA !== upB) return upB - upA;
       var cntA = (A.perGrade && A.perGrade[flowerGrade]) || 0;
       var cntB = (B.perGrade && B.perGrade[flowerGrade]) || 0;
@@ -248,6 +261,9 @@
     if (asolo !== bsolo) return false;
     var upA = (upgrades[a] || {})[flowerName] || 0;
     var upB = (upgrades[b] || {})[flowerName] || 0;
+    var ascoreSolo = isPersonBestScore(A, flowerGrade, upA) && (A.bestScoreCount || 0) === 1;
+    var bscoreSolo = isPersonBestScore(B, flowerGrade, upB) && (B.bestScoreCount || 0) === 1;
+    if (ascoreSolo !== bscoreSolo) return false;
     if (upA !== upB) return false;
     var cntA = (A.perGrade && A.perGrade[flowerGrade]) || 0;
     var cntB = (B.perGrade && B.perGrade[flowerGrade]) || 0;
@@ -346,11 +362,12 @@
         var note = holderNote(st, entry.grade, up);
         var solo = (st.perGrade && st.perGrade[entry.grade]) === 1;
         var star = isPersonBestScore(st, entry.grade, up);
+        var scoreSolo = !solo && star && (st.bestScoreCount || 0) === 1;
         return (
-          '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
+          '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : scoreSolo ? " mr-rank-row-score-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
           '<span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
           '<span class="mr-rank-name">' + esc(name) + "</span>" +
-          (star ? '<span class="mr-rank-star-badge">⭐최고점수</span>' : "") +
+          (star ? '<span class="mr-rank-star-badge">⭐' + (scoreSolo ? "점수 유일" : "최고점수") + "</span>" : "") +
           '<span class="mr-rank-note">' + esc(note) + "</span>" +
           "</div>"
         );
