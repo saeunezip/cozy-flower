@@ -86,6 +86,8 @@
       ".mr-clear-btn.mr-clear-show{display:flex}" +
       ".mr-nr-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#37474f}" +
       ".mr-nr-head input{width:52px;padding:6px 8px;border:1px solid #cfd4dc;border-radius:8px;font-size:13px;text-align:center;font-family:inherit}" +
+      ".mr-nr-step{width:28px;height:28px;padding:0;border:none;border-radius:50%;background:#e8ebf2;color:#1f3b73;font-size:17px;font-weight:bold;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}" +
+      ".mr-nr-step:active{transform:scale(.94)}" +
       ".mr-nr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}" +
       // min-width:0 없으면 .mr-nr-name의 white-space:nowrap 텍스트("김연유 (외 5명)" 같은 긴 라벨)가
       // 그 열의 최소 폭을 밀어 올려서, 같은 열의 다른 행 카드까지 전부 커지고 나머지 열은 좁아진다
@@ -367,7 +369,7 @@
           '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : scoreSolo ? " mr-rank-row-score-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
           '<span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
           '<span class="mr-rank-name">' + esc(name) + "</span>" +
-          (star ? '<span class="mr-rank-star-badge">⭐' + (scoreSolo ? "점수 유일" : "최고점수") + "</span>" : "") +
+          (star ? '<span class="mr-rank-star-badge">⭐' + (solo ? "등급 유일" : scoreSolo ? "점수 유일" : "최고점수") + "</span>" : "") +
           '<span class="mr-rank-note">' + esc(note) + "</span>" +
           "</div>"
         );

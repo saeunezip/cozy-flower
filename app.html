@@ -300,7 +300,9 @@
           <h3>이 꽃은 새로고침 금지 <span class="nr-badge" id="nrCount"></span></h3>
           <div class="mr-nr-head">
             임무 횟수
-            <input type="number" inputmode="numeric" id="nrMaxUsed" min="1" max="24" step="1" value="23" onchange="renderNoReroll()" />
+            <button type="button" class="mr-nr-step" onclick="adjustNrMaxUsed(-1)" aria-label="임무 횟수 기준 줄이기">−</button>
+            <input type="text" inputmode="numeric" id="nrMaxUsed" value="23" onchange="renderNoReroll()" />
+            <button type="button" class="mr-nr-step" onclick="adjustNrMaxUsed(1)" aria-label="임무 횟수 기준 늘리기">+</button>
             회 미만
           </div>
           <div id="nrGrid"><div class="loading">불러오는 중…</div></div>
@@ -787,6 +789,13 @@
       var maxUsed = parseInt(document.getElementById('nrMaxUsed').value, 10);
       if (isNaN(maxUsed) || maxUsed < 1 || maxUsed > MAX_COUNT) maxUsed = 23;
       return MAX_COUNT - maxUsed + 1;
+    }
+    function adjustNrMaxUsed(delta) {
+      var input = document.getElementById('nrMaxUsed');
+      var value = parseInt(input.value, 10);
+      if (isNaN(value)) value = 23;
+      input.value = Math.min(Math.max(value + delta, 1), MAX_COUNT);
+      renderNoReroll();
     }
     function renderNoReroll() {
       if (!snap) return;
