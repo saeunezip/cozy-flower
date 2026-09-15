@@ -254,8 +254,8 @@
     return cntA === cntB;
   }
 
-  // "이 꽃은 새로고침 금지" 목록 — 남은 임무가 minRemain 이상인 사람만 순위 계산에 넣고,
-  // 그 안에서 "누군가의 최고 등급"인 꽃마다 카드를 하나씩 만든다.
+  // "이 꽃은 새로고침 금지" 목록 — 남은 임무가 minRemain 이상이고, 이 꽃이 실제로
+  // 본인의 최고점수(등급+개량)인 사람만 순위 계산에 넣는다.
   function buildNoRerollList(snap, counts, minRemain) {
     var computed = computeStats(snap, counts);
     var stats = computed.stats;
@@ -267,6 +267,8 @@
         var st = stats[name];
         if (!st || st.remain < minRemain || st.best !== f.grade) return;
         if ((snap.unlocked[name] || "").charAt(i) !== "1") return;
+        var up = (upgrades[name] || {})[f.name] || 0;
+        if (!isPersonBestScore(st, f.grade, up)) return;
         if (!map[f.name]) map[f.name] = { name: f.name, grade: f.grade, holders: [] };
         map[f.name].holders.push(name);
       });
@@ -283,17 +285,7 @@
       entry.rank1Tie = tie;
       // 1순위가 유일 최고등급이면(=이 꽃에 유일 최고등급 보유자가 있으면) 카드에 별을 띄운다.
       entry.hasSolo = (stats[entry.holders[0]] || {}).bestCount === 1;
-      // 보유자 중 아무도 "이 꽃이 내 최고 점수 꽃"이 아니면(다들 다른 꽃에 더 밀린다면)
-      // 이 꽃은 진짜 최우선은 아니라고 보고 목록에서 아예 뺀다.
-      entry.hasBestScore = entry.holders.some(function (name) {
-        var up = (upgrades[name] || {})[entry.name] || 0;
-        return isPersonBestScore(stats[name], entry.grade, up);
-      });
       return entry;
-    });
-
-    list = list.filter(function (entry) {
-      return entry.hasBestScore;
     });
 
     list.sort(function (a, b) {
@@ -305,7 +297,7 @@
   function noRerollCardLabel(entry) {
     var first = entry.holders[0];
     if (!first) return "";
-    return entry.rank1Tie > 1 ? first + " (외 " + (entry.rank1Tie - 1) + "명)" : first;
+    return entry.holders.length > 1 ? first + " (외 " + (entry.holders.length - 1) + "명)" : first;
   }
 
   function noRerollGridHtml(list, imgUrl) {
@@ -333,22 +325,21 @@
   // 순위 번호는 완전히 동순위(sameTier)면 같은 번호를 준다(표준 경쟁 순위 — 1,1,3,4...).
   function noRerollDetailHtml(entry, stats, upgrades) {
     upgrades = upgrades || {};
-    var top = entry.holders.slice(0, 5);
-    var rest = entry.holders.slice(5);
+    var ranked = entry.holders;
     var ranks = [];
-    for (var ri = 0; ri < top.length; ri++) {
+    for (var ri = 0; ri < ranked.length; ri++) {
       if (ri === 0) {
         ranks.push(1);
-      } else if (sameTier(top[ri - 1], top[ri], stats, upgrades, entry.name, entry.grade)) {
+      } else if (sameTier(ranked[ri - 1], ranked[ri], stats, upgrades, entry.name, entry.grade)) {
         ranks.push(ranks[ri - 1]);
       } else {
         ranks.push(ri + 1);
       }
     }
     var html =
-      '<div class="mr-rank-lead">' + entry.holders.length + "명의 최고등급 꽃입니다</div>" +
+      '<div class="mr-rank-lead">' + ranked.length + "명에게 최고점수인 꽃입니다</div>" +
       '<div class="mr-rank-hint">이름을 눌러 바로 임무 보드에 등록할 수 있습니다</div>';
-    html += top
+    html += ranked
       .map(function (name, i) {
         var st = stats[name] || {};
         var up = (upgrades[name] || {})[entry.name] || 0;
@@ -365,13 +356,6 @@
         );
       })
       .join("");
-    if (rest.length) {
-      html +=
-        '<div class="mr-rest-label">그외 ' + rest.length + "명</div>" +
-        '<div class="mr-rest-list">' +
-        rest.map(function (name) { return '<span class="mr-chip">' + esc(name) + "</span>"; }).join("") +
-        "</div>";
-    }
     return html;
   }
 
