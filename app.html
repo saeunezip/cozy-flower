@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="stylesheet" href="cozy-features.css">
   <meta name="robots" content="noindex">
   <title>길드전 계산기</title>
 
@@ -263,7 +264,7 @@
               <h1 class="app-title">백야</h1>
             </div>
             <div class="me-pill-wrap">
-              <button type="button" class="me-pill" id="mePillBtn" onclick="toggleMeMenu()">이름 선택</button>
+              <button type="button" class="me-pill" id="mePillBtn" onclick="onMePillClick()">이름 선택</button>
               <div class="me-menu" id="meMenu"></div>
             </div>
           </div>
@@ -282,10 +283,10 @@
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg></span>
             임무 추천 순위
           </button>
-          <a class="shortcut-tile" href="app.html?page=register">
+          <button type="button" class="shortcut-tile" onclick="CozyFeatures.showMarket()">
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="12" r="2.2"/></svg></span>
-            내 꽃 등록
-          </a>
+            거래소 의뢰
+          </button>
           <a class="shortcut-tile" href="board.html">
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
             임무 보드
@@ -295,6 +296,11 @@
             cozytools
           </a>
         </div>
+
+        <section class="activity-section" id="activitySection">
+          <div class="activity-head"><h3>이 시간대 주로 활동하는 길드원</h3><span id="activityRange">시간표 설정 전</span></div>
+          <div id="activityMembers" class="activity-members">시간대 범위가 확정되면 표시됩니다.</div>
+        </section>
 
         <div class="qr-section">
           <h3>이 꽃은 새로고침 금지 <span class="nr-badge" id="nrCount"></span></h3>
@@ -328,6 +334,9 @@
           <a class="preview-link" href="board.html">임무 보드 전체 보기 →</a>
         </div>
       </div>
+
+      <div id="profileView" class="feature-view"></div>
+      <div id="marketView" class="feature-view"></div>
 
       <div id="recoView">
         <div class="reco-head">
@@ -386,6 +395,7 @@
   </div>
 
   <script src="mission-register.js"></script>
+  <script src="cozy-features.js"></script>
   <script>
     /* ===================================================================
        배포된 웹앱 주소 (등록/관리자 모드에서만 씀). 재배포해도 이 주소는
@@ -493,6 +503,7 @@
         renderCountBadge();
         renderPreview();
         renderNoReroll();
+        CozyFeatures.onDataLoaded();
 
         var idxSnap = indexRes && indexRes.ok && indexRes.snapshot;
         if (idxSnap && Array.isArray(idxSnap.guild) && Array.isArray(idxSnap.task)) {
@@ -538,6 +549,10 @@
     function toggleMeMenu() {
       document.getElementById('meMenu').classList.toggle('show');
     }
+    function onMePillClick() {
+      if (!meName) toggleMeMenu();
+      else CozyFeatures.showProfile(meName);
+    }
     function hideMeMenu() {
       document.getElementById('meMenu').classList.remove('show');
     }
@@ -549,6 +564,7 @@
       renderMeMenu();
       renderCountBadge();
       renderPreview();
+      CozyFeatures.onIdentityChanged();
     }
     function onToggleMine() {
       var box = document.getElementById('onlyMineToggle');
@@ -817,12 +833,22 @@
         '<span>' + esc(entry.name) + ' 순위</span>',
       );
       document.getElementById('modalBody').innerHTML = MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
+      CozyFeatures.decorateCandidateTags(document.getElementById('modalBody'));
     }
     document.getElementById('nrGrid').addEventListener('click', function (ev) {
       var el = ev.target.closest('[data-mr-nr-idx]');
       if (el) openNoRerollModal(parseInt(el.getAttribute('data-mr-nr-idx'), 10));
     });
     document.getElementById('modalBody').addEventListener('click', function (ev) {
+      var unassigned = ev.target.closest('[data-mr-nr-unassigned]');
+      if (unassigned && nrModalEntry) {
+        MissionRegister.quickAssign({
+          apiUrl: API, flower: nrModalEntry.name, grade: nrModalEntry.grade, member: '', board: board,
+          say: function (msg, isErr) { if (isErr) alert(msg); },
+          onDone: function () { closeModal(); loadHomeData(); }
+        });
+        return;
+      }
       var el = ev.target.closest('[data-mr-nr-name]');
       if (!el || !nrModalEntry) return;
       MissionRegister.quickAssign({
@@ -1054,7 +1080,7 @@
         var members = [];
         for (var i = 4; i <= 8; i++) {
           var v = String(row[i] == null ? '' : row[i]).trim();
-          if (v && v !== '-') members.push('<span><b>' + (i - 3) + '.</b> ' + esc(v) + '</span>');
+          if (v && v !== '-') members.push('<span><b>' + (i - 3) + '.</b> ' + esc(v) + CozyFeatures.memberTagsHtml(v) + '</span>');
         }
         html += '<div class="trow">' +
                   '<div class="ticon b-' + (GCLASS[g] || 'none') + '"' +

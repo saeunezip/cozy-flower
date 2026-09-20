@@ -355,7 +355,8 @@
       }
     }
     var html =
-      '<div class="mr-rank-lead">' + ranked.length + "명에게 최고점수인 꽃입니다</div>" +
+      '<div class="mr-rank-lead">' + ranked.length + '명에게 최고점수인 꽃입니다' +
+      '<button type="button" class="mr-btn mr-unassigned-btn" data-mr-nr-unassigned>지정 없이 등록</button></div>' +
       '<div class="mr-rank-hint">이름을 눌러 바로 임무 보드에 등록할 수 있습니다</div>';
     html += ranked
       .map(function (name, i) {
@@ -411,9 +412,8 @@
   // 다시 보여줄 필요 없이(이미 팝업에서 누가 받을지 정해졌으므로) 번호만 물어보고 바로 등록한다.
   // opts: { apiUrl, flower, grade, member, board(선택 — 있으면 충돌 확인), say(선택), onDone(선택) }
   function quickAssign(opts) {
-    var raw = prompt(
-      opts.flower + "을(를) " + opts.member + " 임무로 배정합니다.\n임무 번호를 적어 주세요. (여러 개면 \"15, 17\"처럼 콤마로 구분)",
-    );
+    var targetLabel = opts.member ? opts.member + " 임무로 배정합니다." : "담당자 지정 없이 등록합니다.";
+    var raw = prompt(opts.flower + "을(를) " + targetLabel + "\n임무 번호를 적어 주세요. (여러 개면 \"15, 17\"처럼 콤마로 구분)");
     if (raw === null) return;
     var nos = parseSlotNumbers(raw);
     if (!nos.length) {
