@@ -61,7 +61,7 @@
 
     .me-pill-wrap { position: relative; flex: none; }
     .me-pill { background: rgba(255,255,255,.16); color: #fff; border: none; padding: 7px 14px; border-radius: 999px;
-               font-size: 13px; font-weight: bold; font-family: inherit; cursor: pointer; max-width: 96px;
+               font-size: 13px; font-weight: bold; font-family: inherit; cursor: pointer; max-width: 116px;
                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .me-pill:hover { background: rgba(255,255,255,.24); }
     .me-menu { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border-radius: 12px;
@@ -476,7 +476,7 @@
 
     function runHomeMode() {
       loadHomeData();
-      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      document.getElementById('mePillBtn').textContent = mePillText();
       document.addEventListener('click', function (ev) {
         if (!ev.target.closest('.search-wrap')) hideSearchDropdown();
         if (!ev.target.closest('.me-pill-wrap')) hideMeMenu();
@@ -539,6 +539,9 @@
       if (!name) return '이름 선택';
       return name.length >= 4 ? name.slice(0, 3) + '...' : name;
     }
+    function mePillText() {
+      return meName ? truncateName(meName) + '  →' : '이름 선택';
+    }
     function renderMeMenu() {
       var menu = document.getElementById('meMenu');
       var members = snap.members || [];
@@ -559,7 +562,7 @@
     function pickMe(name) {
       meName = name;
       try { localStorage.setItem('boardMe', meName); } catch (e) {}
-      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      document.getElementById('mePillBtn').textContent = mePillText();
       hideMeMenu();
       renderMeMenu();
       renderCountBadge();
