@@ -3,7 +3,7 @@
 
   var HISTORY_KEY = "cozyMarketHistoryV1";
   var TAGS = ["오전반", "오후반", "저녁반", "새벽반", "종일반"];
-  var state = { loaded: false, available: false, profiles: {}, requests: [], viewer: null, profileMember: "", expanded: false, draft: null, saving: false, activityTimer: null };
+  var state = { loaded: false, available: false, profiles: {}, requests: [], viewer: null, profileMember: "", profilePickerOpen: false, timeEditorOpen: false, expanded: false, draft: null, saving: false, activityTimer: null };
   var SCHEDULE = [
     { tag: "새벽반", start: 0, end: 6 }, { tag: "오전반", start: 6, end: 12 },
     { tag: "오후반", start: 12, end: 18 }, { tag: "저녁반", start: 18, end: 24 }
@@ -68,19 +68,19 @@
     });
   }
 
-  function showProfile(name) { state.profileMember = name || ownName(); state.expanded = false; renderProfile(); showOnly("profileView"); }
+  function showProfile(name) { state.profileMember = name || ownName(); state.profilePickerOpen = false; state.timeEditorOpen = false; state.expanded = false; renderProfile(); showOnly("profileView"); }
   function renderProfile() {
     var name = state.profileMember || ownName(); var mine = name === ownName(); var p = state.profiles[name] || {}; var fs = flowersOf(name);
     var tags = Array.isArray(p.timeTags) ? p.timeTags : [];
     var tagHtml = TAGS.map(function (t) { return '<button type="button" class="time-tag' + (tags.indexOf(t) >= 0 ? " selected" : "") + '" data-tag="' + t + '"' + (!state.available ? " disabled" : "") + '>' + t + "</button>"; }).join("");
     var icons = fs.map(function (f) { return '<div class="flower-icon"><img src="' + image(f.name) + '" alt=""><span>' + esc(f.name) + "</span></div>"; }).join("");
     var title = mine ? "내 정보" : "길드원 정보";
-    document.getElementById("profileView").innerHTML = '<div class="feature-panel"><div class="feature-head"><div class="feature-title"><button class="feature-back" data-act="home">← 뒤로</button><h2>' + title + '</h2></div></div>' + note() +
-      '<label class="field-label">다른 길드원 보기</label><select class="profile-switch" data-act="switch-profile">' + options(name) + '</select>' +
-      (!mine ? '<button class="feature-secondary" data-act="my-profile" style="margin-top:8px">내 정보로 돌아가기</button>' : "") +
-      '<div class="profile-name-row"><div class="profile-name-tags"><div class="profile-name">' + esc(name || "이름 미선택") + '</div>' + (tags.length ? tags.map(function(t){return '<span class="activity-chip">'+t+'</span>';}).join("") : '<span class="muted">접속 시간 미등록</span>') + '</div></div><div class="profile-count"><span>임무 횟수:</span><button data-count="-1">−</button><b>' + (global.counts && global.counts[name] || 0) + '</b><button data-count="1">+</button></div>' +
-      '<div><b>접속 시간 변경</b><div class="tag-list" data-role="tags">' + tagHtml + '</div></div>' +
-      '<div class="flower-summary"><div class="flower-summary-head"><b>꽃 보유 현황 · 등록 ' + fs.length + '개</b><a class="feature-secondary" href="app.html?page=register&member=' + encodeURIComponent(name) + '">' + (fs.length ? "꽃 도감 수정 →" : "내 꽃 등록하기") + '</a></div><div class="flower-icons' + (state.expanded ? "" : " collapsed") + '">' + icons + '</div>' + (fs.length > 18 ? '<button class="feature-secondary" data-act="expand" style="margin-top:9px">' + (state.expanded ? "접기" : "전체 펼치기") + '</button>' : "") + '</div><hr><a href="app.html?page=admin" class="muted">관리자 메뉴 →</a></div>';
+    var memberMenu = state.profilePickerOpen ? '<div class="profile-member-menu">' + members().map(function(n){return '<button type="button" class="profile-member-option' + (n===name?' selected':'') + '" data-profile-member="' + esc(n) + '">' + esc(n) + (n===ownName()?' <span>(나)</span>':'') + '</button>';}).join("") + '</div>' : "";
+    var timeSummary = tags.length ? tags.map(function(t){return '<span class="activity-chip">'+esc(t)+'</span>';}).join("") + '<button type="button" class="time-edit-toggle" data-act="toggle-time-editor">접속시간 변경</button>' : '<button type="button" class="time-edit-toggle register" data-act="toggle-time-editor">접속시간 등록</button>';
+    document.getElementById("profileView").innerHTML = '<div class="feature-panel profile-panel"><div class="feature-head"><div class="feature-title"><button class="feature-back" data-act="home">← 뒤로</button><h2>' + title + '</h2></div><div class="profile-member-picker"><button type="button" class="feature-secondary profile-member-toggle" data-act="toggle-profile-picker">다른 길드원 보기 <span>▾</span></button>' + memberMenu + '</div></div>' + note() +
+      '<div class="profile-name-row"><div class="profile-name-tags"><div class="profile-name">' + esc(name || "이름 미선택") + '</div><div class="profile-time-summary">' + timeSummary + '</div></div></div><div class="profile-count"><span>임무 횟수:</span><button data-count="-1">−</button><b>' + (global.counts && global.counts[name] || 0) + '</b><button data-count="1">+</button></div>' +
+      '<div class="time-editor' + (state.timeEditorOpen ? ' open' : '') + '"><div class="tag-list" data-role="tags">' + tagHtml + '</div></div>' +
+      '<div class="flower-summary"><div class="flower-summary-head"><b>꽃 보유 현황 · 등록 ' + fs.length + '개</b><a class="feature-secondary flower-edit-link" href="app.html?page=register&member=' + encodeURIComponent(name) + '">' + (fs.length ? "꽃 도감 수정 →" : "내 꽃 등록하기") + '</a></div><div class="flower-icons' + (state.expanded ? "" : " collapsed") + '">' + icons + '</div>' + (fs.length > 18 ? '<button class="feature-secondary" data-act="expand" style="margin-top:9px">' + (state.expanded ? "접기" : "전체 펼치기") + '</button>' : "") + '</div><hr><a href="app.html?page=admin" class="muted">관리자 메뉴 →</a></div>';
   }
   function setTags(name, tags) {
     if (!state.available) return;
@@ -137,7 +137,8 @@
   }
 
   document.addEventListener("click", function (ev) {
-    var act=ev.target.closest("[data-act]"); if(act){var a=act.getAttribute("data-act");if(a==="home"){showOnly("homeView");return;}if(a==="my-profile"){showProfile(ownName());return;}if(a==="expand"){state.expanded=!state.expanded;renderProfile();return;}if(a==="new-request"){openForm();return;}if(a==="close-form"){state.draft=null;document.querySelector('.market-form-overlay').remove();return;}if(a==="submit"){submitDraft();return;}}
+    var act=ev.target.closest("[data-act]"); if(act){var a=act.getAttribute("data-act");if(a==="home"){showOnly("homeView");return;}if(a==="toggle-profile-picker"){state.profilePickerOpen=!state.profilePickerOpen;renderProfile();return;}if(a==="toggle-time-editor"){state.timeEditorOpen=!state.timeEditorOpen;renderProfile();return;}if(a==="expand"){state.expanded=!state.expanded;renderProfile();return;}if(a==="new-request"){openForm();return;}if(a==="close-form"){state.draft=null;document.querySelector('.market-form-overlay').remove();return;}if(a==="submit"){submitDraft();return;}}
+    var profileMember=ev.target.closest("[data-profile-member]");if(profileMember){showProfile(profileMember.getAttribute("data-profile-member"));return;}
     var count=ev.target.closest("[data-count]");if(count){bumpProfileCount(parseInt(count.getAttribute("data-count"),10));return;}
     var tag=ev.target.closest("[data-tag]");if(tag){var p=state.profiles[state.profileMember]||{}, ts=(p.timeTags||[]).slice(), t=tag.getAttribute("data-tag"), pos=ts.indexOf(t);if(t==="종일반")ts=pos>=0?[]:[t];else{ts=ts.filter(function(x){return x!=="종일반";});if(pos>=0)ts.splice(ts.indexOf(t),1);else ts.push(t);}setTags(state.profileMember,ts);return;}
     var h=ev.target.closest("[data-history]");if(h){openForm(history()[parseInt(h.getAttribute("data-history"),10)]);return;}
@@ -146,7 +147,7 @@
     var step=ev.target.closest("[data-qty-step]");if(step){var qi=parseInt(step.getAttribute("data-qty-step"),10);state.draft.items[qi].quantity=stepDecimal(state.draft.items[qi].quantity,parseInt(step.getAttribute("data-delta"),10));renderForm();return;}
     var toggle=ev.target.closest("[data-toggle-request]");if(toggle){api({action:"market.toggleComplete",id:toggle.getAttribute("data-toggle-request"),actor:ownName()}).then(loadShared).then(renderMarket).catch(function(e){alert(e.message);});}
   });
-  document.addEventListener("change",function(ev){if(ev.target.matches('[data-act="switch-profile"]')){showProfile(ev.target.value);return;}if(!state.draft)return;if(ev.target.matches('[data-field="requester"]')){state.draft.requester=ev.target.value;}if(ev.target.matches('[data-field="target"]')){state.draft.target=ev.target.value;state.draft.items=[];state.draft.error="대상자가 바뀌어 선택한 꽃을 비웠습니다.";renderForm();}if(ev.target.matches('[data-qty]'))state.draft.items[parseInt(ev.target.getAttribute('data-qty'),10)].quantity=ev.target.value;});
+  document.addEventListener("change",function(ev){if(!state.draft)return;if(ev.target.matches('[data-field="requester"]')){state.draft.requester=ev.target.value;}if(ev.target.matches('[data-field="target"]')){state.draft.target=ev.target.value;state.draft.items=[];state.draft.error="대상자가 바뀌어 선택한 꽃을 비웠습니다.";renderForm();}if(ev.target.matches('[data-qty]'))state.draft.items[parseInt(ev.target.getAttribute('data-qty'),10)].quantity=ev.target.value;});
   document.addEventListener("input",function(ev){if(state.draft&&ev.target.matches('[data-field="search"]')){state.draft.search=ev.target.value;var grid=document.querySelector('.market-flower-grid');if(grid)grid.innerHTML=flowerGridHtml(state.draft)||'<div class="feature-empty">검색 결과가 없습니다.</div>';}});
 
   global.CozyFeatures={onDataLoaded:onDataLoaded,onIdentityChanged:onIdentityChanged,showProfile:showProfile,showMarket:showMarket,memberTagsHtml:memberTagsHtml,decorateCandidateTags:decorateCandidateTags};
