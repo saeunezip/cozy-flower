@@ -66,7 +66,10 @@
     if (!root) return;
     Array.prototype.forEach.call(root.querySelectorAll('[data-mr-nr-name]'), function (row) {
       var slot = row.querySelector('.mr-rank-name');
-      if (slot && !slot.querySelector('.activity-chip')) slot.insertAdjacentHTML('beforeend', memberTagsHtml(row.getAttribute('data-mr-nr-name')));
+      var tags = memberTagsHtml(row.getAttribute('data-mr-nr-name'));
+      if (slot && tags && !slot.querySelector('.mr-rank-time-tags')) {
+        slot.insertAdjacentHTML('beforeend', '<span class="mr-rank-time-tags">' + tags + '</span>');
+      }
     });
   }
 

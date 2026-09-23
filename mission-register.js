@@ -110,7 +110,8 @@
       ".mr-rank-row-solo .mr-rank-note{color:#c62828;font-weight:bold}" +
       ".mr-rank-row-score-solo .mr-rank-badge{background:#e0aa00;color:#3e2f00}" +
       ".mr-rank-row-score-solo .mr-rank-note{color:#9a7100;font-weight:bold}" +
-      ".mr-rank-name{flex:1;min-width:0}" +
+      ".mr-rank-name{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;line-height:1.2}" +
+      ".mr-rank-member{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".mr-rank-star-badge{flex:none;font-size:11px;font-weight:bold;color:#8a6100;background:#fff3cd;border-radius:20px;padding:2px 7px;white-space:nowrap}" +
       ".mr-rank-note{color:#78838f;font-size:12px;font-weight:normal;white-space:nowrap}" +
       ".mr-rest-label{font-size:12px;color:#90a4ae;margin:12px 2px 6px;font-weight:bold}" +
@@ -369,7 +370,7 @@
         return (
           '<div class="mr-rank-row' + (solo ? " mr-rank-row-solo" : scoreSolo ? " mr-rank-row-score-solo" : "") + '" data-mr-nr-name="' + esc(name) + '">' +
           '<span class="mr-rank-badge">' + ranks[i] + "순위</span>" +
-          '<span class="mr-rank-name">' + esc(name) + "</span>" +
+          '<span class="mr-rank-name"><span class="mr-rank-member">' + esc(name) + "</span></span>" +
           (star ? '<span class="mr-rank-star-badge">⭐' + (solo ? "등급 유일" : scoreSolo ? "점수 유일" : "최고점수") + "</span>" : "") +
           '<span class="mr-rank-note">' + esc(note) + "</span>" +
           "</div>"
