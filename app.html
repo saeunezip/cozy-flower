@@ -923,30 +923,34 @@
       modalCache.flower[name] = r;
       renderFlowerModal(r);
     }
-    // holders는 순위 순으로 이미 정렬돼 있다 — 앞 5명은 순위를 붙여 보여주고(완전 동순위면
-    // 같은 번호), 나머지는 그 아래 칩으로만 나열한다.
+    // holders는 순위 순으로 이미 정렬돼 있다. 전체 보유자를 기준으로 공동 순위를 계산한 뒤
+    // 10순위까지 메인화면의 순위창과 같은 행(순위·이름·최고 배지·보유 현황)으로 보여준다.
+    // 따라서 본인 최고점수 꽃이 아닌 보유자도 순위에서 빠지지 않는다.
     function renderFlowerModal(r) {
       var body = document.getElementById('modalBody');
       var holders = r.holders;
       if (!holders.length) { body.innerHTML = '<div class="modal-loading">보유한 길드원이 없습니다.</div>'; return; }
-      var top = holders.slice(0, 5);
-      var rest = holders.slice(5);
       var ranks = [];
-      for (var i = 0; i < top.length; i++) {
+      for (var i = 0; i < holders.length; i++) {
         if (i === 0) ranks.push(1);
-        else if (MissionRegister.sameTier(top[i - 1], top[i], r.stats, r.upgrades, r.flowerName, r.grade)) ranks.push(ranks[i - 1]);
+        else if (MissionRegister.sameTier(holders[i - 1], holders[i], r.stats, r.upgrades, r.flowerName, r.grade)) ranks.push(ranks[i - 1]);
         else ranks.push(i + 1);
       }
-      var html = top.map(function (n, i) {
-        return '<div class="mholder-rank-row"><span class="mholder-rank-badge">' + ranks[i] + '순위</span>' + esc(n) + '</div>';
-      }).join('');
-      if (rest.length) {
-        html += '<div class="mholder-rest-label">나머지 ' + rest.length + '명</div>' +
-          '<div class="mholder-list">' +
-          rest.map(function (n) { return '<span class="mholder-chip">' + esc(n) + '</span>'; }).join('') +
+      body.innerHTML = holders.map(function (n, i) {
+        if (ranks[i] > 10) return '';
+        var st = r.stats[n] || {};
+        var up = (r.upgrades[n] || {})[r.flowerName] || 0;
+        var note = MissionRegister.holderNote(st, r.grade, up);
+        var solo = st.best === r.grade && (st.bestCount || 0) === 1;
+        var star = MissionRegister.isPersonBestScore(st, r.grade, up);
+        var scoreSolo = !solo && star && (st.bestScoreCount || 0) === 1;
+        return '<div class="mr-rank-row' + (solo ? ' mr-rank-row-solo' : scoreSolo ? ' mr-rank-row-score-solo' : '') + '">' +
+          '<span class="mr-rank-badge">' + ranks[i] + '순위</span>' +
+          '<span class="mr-rank-name"><span class="mr-rank-member">' + esc(n) + '</span></span>' +
+          (star ? '<span class="mr-rank-star-badge">⭐' + (solo ? '등급 유일' : scoreSolo ? '점수 유일' : '최고점수') + '</span>' : '') +
+          '<span class="mr-rank-note">' + esc(note) + '</span>' +
           '</div>';
-      }
-      body.innerHTML = html;
+      }).join('');
     }
 
     document.getElementById('modalOverlay').addEventListener('click', function (ev) {
