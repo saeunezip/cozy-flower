@@ -1051,7 +1051,7 @@
       var totalMin = 0, totalMax = 0, anyScore = false;
       sorted.forEach(function (row) {
         var slots = '';
-        for (var i = 2; i <= 11; i++) slots += slotHtml(row[i], i - 1);
+        for (var i = 2; i <= 6; i++) slots += slotHtml(row[i], i - 1);
         var range = scoreRangeOf(row[0]);
         var scoreHtml = '';
         if (range) {
