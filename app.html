@@ -395,7 +395,7 @@
   </div>
 
   <script src="mission-register.js?v=20260923-1"></script>
-  <script src="cozy-features.js?v=20260925-1"></script>
+  <script src="cozy-features.js?v=20260927-1"></script>
   <script>
     /* ===================================================================
        배포된 웹앱 주소 (등록/관리자 모드에서만 씀). 재배포해도 이 주소는
@@ -495,7 +495,10 @@
         board  = boardRes.board || {};
         counts = boardRes.counts || {};
         flowerIndex = {};
-        (snap.flowers || []).forEach(function (f, i) { flowerIndex[f.name] = { i: i, grade: f.grade }; });
+        (snap.flowers || []).forEach(function (f, i) {
+          flowerIndex[f.name] = { i: i, grade: f.grade };
+          gradeOf[f.name] = f.grade;
+        });
 
         modalCache = { member: {}, flower: {} }; // 최신 데이터로 다시 받았으니 이전 팝업 캐시는 버린다
 
@@ -516,7 +519,7 @@
             try {
               var t = new Date(idxSnap.builtAt).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' });
               var note = document.getElementById('freshNote');
-              note.textContent = t + ' 기준 · 방금 저장한 내용이라면 잠시 후 새로고침해 보세요';
+              note.textContent = t + ' Cloudflare 도감 기준 · 개량 포함 실제 점수순';
               note.style.display = 'block';
             } catch (e) {}
           }
@@ -1044,7 +1047,7 @@
       var totalMin = 0, totalMax = 0, anyScore = false;
       sorted.forEach(function (row) {
         var slots = '';
-        for (var i = 2; i <= 6; i++) slots += slotHtml(row[i], i - 1);
+        for (var i = 2; i <= 11; i++) slots += slotHtml(row[i], i - 1);
         var range = scoreRangeOf(row[0]);
         var scoreHtml = '';
         if (range) {
@@ -1122,7 +1125,11 @@
        =================================================================== */
     var pageParam = new URLSearchParams(location.search).get('page');
 
-    if (pageParam === 'register' || pageParam === 'admin') {
+    if (pageParam === 'register') {
+      var registerParams = new URLSearchParams(location.search);
+      registerParams.delete('page');
+      location.replace('register.html' + (registerParams.toString() ? '?' + registerParams.toString() : ''));
+    } else if (pageParam === 'admin') {
       document.body.classList.add('mode-wrap');
       runWrapMode();
     } else {

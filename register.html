@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>내 꽃 등록 · 백야</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #f7f7f8; }
+    body { font-family: 'Malgun Gothic', sans-serif; color: #263238; padding-bottom: 92px; }
+    button, input, select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .container { width: min(680px, 100%); margin: 0 auto; padding: 14px 12px 34px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .back { flex: none; color: #1F3B73; background: #e8ebf2; text-decoration: none; border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: bold; }
+    h1 { min-width: 0; margin: 0; color: #152C57; font-size: 21px; }
+    .member-badge { margin-left: auto; color: #fff; background: #6B4F8F; border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .panel { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .intro { margin: 2px 0 14px; color: #607D8B; font-size: 13px; line-height: 1.55; }
+    .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); gap: 8px; }
+    .member-btn { border: 1px solid #dfe4eb; border-radius: 10px; background: #fff; color: #263238; min-height: 45px; padding: 8px; font-weight: bold; cursor: pointer; }
+    .member-btn:hover, .member-btn:focus-visible { border-color: #1F3B73; background: #f3f6fc; outline: none; }
+    .toolbar { position: sticky; top: 0; z-index: 20; margin-bottom: 10px; padding: 10px; background: rgba(247,247,248,.96); backdrop-filter: blur(8px); }
+    .search { width: 100%; height: 43px; padding: 0 13px; border: 1px solid #dfe3e6; border-radius: 10px; background: #fff; outline: none; font-size: 14px; }
+    .search:focus { border-color: #1F3B73; box-shadow: 0 0 0 3px rgba(31,59,115,.1); }
+    .chips { display: flex; gap: 6px; overflow-x: auto; padding: 9px 1px 1px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; border: 1px solid #dfe3e6; border-radius: 999px; background: #fff; color: #546E7A; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    .chip.active { border-color: #1F3B73; background: #1F3B73; color: #fff; }
+    .status { min-height: 23px; padding: 1px 2px 8px; color: #78909C; font-size: 12px; }
+    .flower-list { display: flex; flex-direction: column; gap: 7px; }
+    .flower-row { min-height: 60px; display: flex; align-items: center; gap: 9px; padding: 8px 9px; border: 1px solid #e1e6ea; border-radius: 11px; background: #fff; cursor: pointer; transition: border-color .12s, background .12s, box-shadow .12s; }
+    .flower-row:hover { border-color: #b0bec5; }
+    .flower-row:focus-visible { outline: 3px solid rgba(31,59,115,.2); outline-offset: 1px; }
+    .flower-row.on { border-color: #1F3B73; background: #F3F6FC; box-shadow: 0 2px 7px rgba(31,59,115,.1); }
+    .flower-thumb { width: 42px; height: 42px; flex: none; border-radius: 8px; object-fit: cover; background: #eceff1; }
+    .flower-info { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    .flower-name { width: 100%; font-size: 13.5px; line-height: 1.35; font-weight: bold; word-break: keep-all; }
+    .grade { display: inline-flex; border-radius: 5px; padding: 2px 6px; color: #3E2723; font-size: 10px; font-weight: bold; }
+    .g-ur-plus { background: #E6B8AF; } .g-ur { background: #F4CCCC; }
+    .g-ssr { background: #FFF2CC; } .g-sr-plus { background: #B4A7D6; } .g-sr { background: #D9D2E9; }
+    .upgrade { width: 89px; flex: none; display: none; padding: 7px 5px; border: 1px solid #d3d9df; border-radius: 8px; background: #fff; color: #455A64; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .flower-row.on .upgrade { display: block; }
+    .upgrade.set { border-color: #8E24AA; color: #8E24AA; background: #FCF5FE; }
+    .check { width: 24px; height: 24px; flex: none; display: flex; align-items: center; justify-content: center; border: 2px solid #cfd6dd; border-radius: 50%; background: #fff; color: transparent; font-size: 13px; font-weight: bold; }
+    .flower-row.on .check { border-color: #1F3B73; background: #1F3B73; color: #fff; }
+    .empty, .loading, .error { padding: 28px 14px; border-radius: 12px; background: #fff; color: #78909C; text-align: center; font-size: 14px; line-height: 1.65; }
+    .error { color: #C62828; background: #FFEBEE; }
+    .switch-member { border: 0; background: none; color: #6B4F8F; padding: 8px 2px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; border-top: 1px solid #e1e5e8; background: rgba(255,255,255,.97); box-shadow: 0 -2px 12px rgba(0,0,0,.08); padding: 10px 12px max(10px, env(safe-area-inset-bottom)); }
+    .save-inner { width: min(656px, 100%); margin: auto; display: flex; align-items: center; gap: 10px; }
+    .counts { min-width: 0; flex: 1; color: #546E7A; font-size: 12px; line-height: 1.45; }
+    .counts b { color: #1F3B73; }
+    .counts .warn { color: #C62828; }
+    .save { flex: none; min-width: 108px; min-height: 43px; border: 0; border-radius: 10px; background: #1F3B73; color: #fff; font-weight: bold; cursor: pointer; }
+    .save:disabled { background: #b0bec5; cursor: default; }
+    .notice { display: none; margin: 0 0 10px; padding: 11px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+    .notice.ok { display: block; color: #2E7D32; background: #E8F5E9; }
+    .notice.bad { display: block; color: #C62828; background: #FFEBEE; }
+    .reload { margin-left: 6px; border: 0; border-radius: 7px; background: #C62828; color: #fff; padding: 5px 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    [hidden] { display: none !important; }
+    @media (max-width: 390px) {
+      .container { padding-left: 9px; padding-right: 9px; }
+      .flower-row { gap: 7px; padding: 8px; }
+      .flower-name { font-size: 13px; }
+      .upgrade { width: 82px; font-size: 10.5px; }
+      .member-badge { max-width: 108px; overflow: hidden; text-overflow: ellipsis; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <a class="back" href="app.html">← 메인</a>
+      <h1>내 꽃 등록</h1>
+      <span class="member-badge" id="memberBadge" hidden></span>
+    </header>
+
+    <section id="memberView" class="panel">
+      <p class="intro">등록할 길드원을 선택해 주세요. 대리 등록을 해도 브라우저에 저장된 '내 이름'은 바뀌지 않습니다.</p>
+      <div id="memberGrid" class="member-grid"><div class="loading">길드원 명단을 불러오는 중…</div></div>
+    </section>
+
+    <section id="catalogView" hidden>
+      <div class="toolbar">
+        <input class="search" id="search" type="search" placeholder="꽃 이름 검색" autocomplete="off">
+        <div class="chips" id="gradeChips"></div>
+        <div class="chips" id="stateChips"></div>
+      </div>
+      <button class="switch-member" type="button" id="switchMember">다른 길드원 등록하기</button>
+      <div id="notice" class="notice"></div>
+      <div id="status" class="status"></div>
+      <div id="flowerList" class="flower-list"></div>
+    </section>
+  </main>
+
+  <footer class="savebar" id="savebar" hidden>
+    <div class="save-inner">
+      <div class="counts" id="counts"></div>
+      <button class="save" id="save" type="button" disabled>저장하기</button>
+    </div>
+  </footer>
+
+  <script>
+    const API = 'https://guild-flower-worker.saeunezip.workers.dev';
+    const GRADE_CLASS = { 'UR+':'g-ur-plus', 'UR':'g-ur', 'SSR':'g-ssr', 'SR+':'g-sr-plus', 'SR':'g-sr' };
+    const GRADES = ['UR+', 'UR', 'SSR', 'SR+', 'SR'];
+    const state = {
+      members: [], member: '', flowers: [], baseline: {}, revision: 0,
+      maxUpgrades: 10, maxLevel: 4, gradeFilter: 'all', stateFilter: 'all', saving: false
+    };
+
+    const memberView = document.getElementById('memberView');
+    const catalogView = document.getElementById('catalogView');
+    const memberBadge = document.getElementById('memberBadge');
+    const memberGrid = document.getElementById('memberGrid');
+    const flowerList = document.getElementById('flowerList');
+    const notice = document.getElementById('notice');
+    const savebar = document.getElementById('savebar');
+    const saveButton = document.getElementById('save');
+
+    function apiUrl(member) {
+      return API + '/register-data' + (member ? '?member=' + encodeURIComponent(member) : '');
+    }
+
+    async function getJson(url, options) {
+      const response = await fetch(url, options);
+      let data;
+      try { data = await response.json(); }
+      catch (err) { throw new Error('서버 응답을 읽지 못했습니다.'); }
+      if (!response.ok || !data.ok) {
+        const error = new Error(data.error || '요청을 처리하지 못했습니다.');
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    }
+
+    function showNotice(message, type, conflict) {
+      notice.className = 'notice ' + type;
+      notice.textContent = message;
+      if (conflict) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'reload';
+        button.textContent = '최신 내용 불러오기';
+        button.onclick = function () { loadMember(state.member); };
+        notice.appendChild(button);
+      }
+    }
+
+    function clearNotice() {
+      notice.className = 'notice';
+      notice.textContent = '';
+    }
+
+    function renderMembers() {
+      memberGrid.innerHTML = '';
+      state.members.forEach(function (name) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'member-btn';
+        button.textContent = name;
+        button.onclick = function () { loadMember(name); };
+        memberGrid.appendChild(button);
+      });
+    }
+
+    function showMemberPicker() {
+      state.member = '';
+      memberView.hidden = false;
+      catalogView.hidden = true;
+      savebar.hidden = true;
+      memberBadge.hidden = true;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function makeChip(label, value, active, onClick) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'chip' + (active === value ? ' active' : '');
+      button.textContent = label;
+      button.onclick = onClick;
+      return button;
+    }
+
+    function renderChips() {
+      const gradeWrap = document.getElementById('gradeChips');
+      const stateWrap = document.getElementById('stateChips');
+      gradeWrap.innerHTML = '';
+      stateWrap.innerHTML = '';
+
+      gradeWrap.appendChild(makeChip('전체', 'all', state.gradeFilter, function () {
+        state.gradeFilter = 'all'; renderChips(); applyFilter();
+      }));
+      GRADES.filter(function (grade) {
+        return state.flowers.some(function (flower) { return flower.grade === grade; });
+      }).forEach(function (grade) {
+        gradeWrap.appendChild(makeChip(grade, grade, state.gradeFilter, function () {
+          state.gradeFilter = grade; renderChips(); applyFilter();
+        }));
+      });
+
+      [['상태 전체','all'],['보유함','on'],['미보유','off'],['개량함','upg']].forEach(function (item) {
+        stateWrap.appendChild(makeChip(item[0], item[1], state.stateFilter, function () {
+          state.stateFilter = item[1]; renderChips(); applyFilter();
+        }));
+      });
+    }
+
+    function imageUrl(flower) {
+      return API + '/icon/' + encodeURIComponent(flower.imageKey || (flower.name + '.webp')) + '?v=' + (flower.imageVersion || 1);
+    }
+
+    function renderFlowers() {
+      flowerList.innerHTML = '';
+      state.flowers.forEach(function (flower, index) {
+        const row = document.createElement('div');
+        row.className = 'flower-row' + (flower.unlocked ? ' on' : '');
+        row.dataset.index = String(index);
+        row.tabIndex = 0;
+        row.setAttribute('role', 'checkbox');
+        row.setAttribute('aria-checked', flower.unlocked ? 'true' : 'false');
+        row.onclick = function () { toggleFlower(index); };
+        row.onkeydown = function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleFlower(index);
+          }
+        };
+
+        const img = document.createElement('img');
+        img.className = 'flower-thumb';
+        img.src = imageUrl(flower);
+        img.alt = '';
+        img.loading = 'lazy';
+        img.onerror = function () { img.style.visibility = 'hidden'; };
+
+        const info = document.createElement('div');
+        info.className = 'flower-info';
+        const name = document.createElement('div');
+        name.className = 'flower-name';
+        name.textContent = flower.name;
+        const grade = document.createElement('span');
+        grade.className = 'grade ' + (GRADE_CLASS[flower.grade] || '');
+        grade.textContent = flower.grade;
+        info.appendChild(name);
+        info.appendChild(grade);
+
+        const select = document.createElement('select');
+        select.className = 'upgrade' + (flower.upgrade > 0 ? ' set' : '');
+        select.setAttribute('aria-label', flower.name + ' 개량 단계');
+        for (let level = 0; level <= state.maxLevel; level++) {
+          const option = document.createElement('option');
+          option.value = String(level);
+          option.textContent = level === 0 ? '개량 추가' : '개량 +' + level;
+          select.appendChild(option);
+        }
+        select.value = String(flower.upgrade || 0);
+        select.onclick = function (event) { event.stopPropagation(); };
+        select.onchange = function (event) {
+          event.stopPropagation();
+          flower.upgrade = Number(select.value) || 0;
+          select.className = 'upgrade' + (flower.upgrade > 0 ? ' set' : '');
+          updateSummary();
+        };
+
+        const check = document.createElement('span');
+        check.className = 'check';
+        check.textContent = '✓';
+        row.appendChild(img);
+        row.appendChild(info);
+        row.appendChild(select);
+        row.appendChild(check);
+        flowerList.appendChild(row);
+      });
+      applyFilter();
+    }
+
+    function toggleFlower(index) {
+      const flower = state.flowers[index];
+      flower.unlocked = !flower.unlocked;
+      if (!flower.unlocked) flower.upgrade = 0;
+      const row = flowerList.querySelector('[data-index="' + index + '"]');
+      row.classList.toggle('on', flower.unlocked);
+      row.setAttribute('aria-checked', flower.unlocked ? 'true' : 'false');
+      const select = row.querySelector('select');
+      select.value = String(flower.upgrade || 0);
+      select.className = 'upgrade' + (flower.upgrade > 0 ? ' set' : '');
+      updateSummary();
+      if (state.stateFilter !== 'all') applyFilter();
+    }
+
+    function changedFlowers() {
+      return state.flowers.filter(function (flower) {
+        const before = state.baseline[flower.flowerId] || { unlocked: false, upgrade: 0 };
+        return before.unlocked !== flower.unlocked || before.upgrade !== flower.upgrade;
+      });
+    }
+
+    function updateSummary() {
+      const owned = state.flowers.filter(function (flower) { return flower.unlocked; }).length;
+      const upgraded = state.flowers.filter(function (flower) { return flower.unlocked && flower.upgrade > 0; }).length;
+      const changes = changedFlowers().length;
+      const over = upgraded > state.maxUpgrades;
+      document.getElementById('counts').innerHTML =
+        '보유 <b>' + owned + '</b>개 · 개량 <span class="' + (over ? 'warn' : '') + '"><b>' + upgraded + ' / ' + state.maxUpgrades + '</b></span>' +
+        (changes ? ' · 변경 ' + changes + '개' : '');
+      saveButton.disabled = state.saving || changes === 0 || over;
+      saveButton.textContent = state.saving ? '저장 중…' : '저장하기';
+    }
+
+    function applyFilter() {
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      let shown = 0;
+      state.flowers.forEach(function (flower, index) {
+        let visible = !query || flower.name.toLowerCase().includes(query);
+        if (visible && state.gradeFilter !== 'all') visible = flower.grade === state.gradeFilter;
+        if (visible && state.stateFilter === 'on') visible = flower.unlocked;
+        if (visible && state.stateFilter === 'off') visible = !flower.unlocked;
+        if (visible && state.stateFilter === 'upg') visible = flower.unlocked && flower.upgrade > 0;
+        flowerList.querySelector('[data-index="' + index + '"]').style.display = visible ? '' : 'none';
+        if (visible) shown++;
+      });
+      document.getElementById('status').textContent = '총 ' + state.flowers.length + '종 중 ' + shown + '종 표시';
+    }
+
+    function snapshotBaseline() {
+      state.baseline = {};
+      state.flowers.forEach(function (flower) {
+        state.baseline[flower.flowerId] = { unlocked: flower.unlocked, upgrade: flower.upgrade };
+      });
+    }
+
+    async function loadMember(name) {
+      clearNotice();
+      memberView.hidden = true;
+      catalogView.hidden = false;
+      savebar.hidden = false;
+      memberBadge.hidden = false;
+      memberBadge.textContent = name + ' 님';
+      flowerList.innerHTML = '<div class="loading">' + name + ' 님의 도감을 불러오는 중…</div>';
+      saveButton.disabled = true;
+      try {
+        const data = await getJson(apiUrl(name), { cache: 'no-store' });
+        state.member = data.member;
+        state.members = data.members || state.members;
+        state.flowers = data.flowers || [];
+        state.revision = data.revision || 0;
+        state.maxUpgrades = data.maxUpgrades || 10;
+        state.maxLevel = data.maxLevel || 4;
+        state.gradeFilter = 'all';
+        state.stateFilter = 'all';
+        document.getElementById('search').value = '';
+        snapshotBaseline();
+        renderChips();
+        renderFlowers();
+        updateSummary();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        flowerList.innerHTML = '<div class="error"></div>';
+        flowerList.firstChild.textContent = err.message;
+        savebar.hidden = true;
+      }
+    }
+
+    function requestId() {
+      if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+      return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+    }
+
+    async function saveChanges() {
+      if (state.saving) return;
+      const changed = changedFlowers();
+      if (!changed.length) return;
+      state.saving = true;
+      clearNotice();
+      updateSummary();
+      try {
+        const data = await getJson(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveMemberFlowers',
+            member: state.member,
+            expectedRevision: state.revision,
+            requestId: requestId(),
+            changes: changed.map(function (flower) {
+              return { flowerId: flower.flowerId, unlocked: flower.unlocked, upgrade: flower.unlocked ? flower.upgrade : 0 };
+            })
+          })
+        });
+        state.revision = data.revision;
+        snapshotBaseline();
+        showNotice('저장했습니다. 메인과 임무 보드에도 새 도감이 반영됩니다.', 'ok');
+      } catch (err) {
+        showNotice(err.message, 'bad', err.status === 409 || (err.data && err.data.conflict));
+      } finally {
+        state.saving = false;
+        updateSummary();
+      }
+    }
+
+    async function init() {
+      document.getElementById('search').addEventListener('input', applyFilter);
+      document.getElementById('switchMember').addEventListener('click', showMemberPicker);
+      saveButton.addEventListener('click', saveChanges);
+      try {
+        const data = await getJson(apiUrl(''), { cache: 'no-store' });
+        state.members = data.members || [];
+        renderMembers();
+        const requested = new URLSearchParams(location.search).get('member');
+        let saved = '';
+        try { saved = localStorage.getItem('boardMe') || ''; } catch (err) {}
+        const member = requested || saved;
+        if (member && state.members.includes(member)) loadMember(member);
+      } catch (err) {
+        memberGrid.innerHTML = '<div class="error"></div>';
+        memberGrid.firstChild.textContent = err.message;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
