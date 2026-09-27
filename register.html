@@ -29,21 +29,21 @@
     .chip { flex: none; border: 1px solid #dfe3e6; border-radius: 999px; background: #fff; color: #546E7A; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
     .chip.active { border-color: #1F3B73; background: #1F3B73; color: #fff; }
     .status { min-height: 23px; padding: 1px 2px 8px; color: #78909C; font-size: 12px; }
-    .flower-list { display: flex; flex-direction: column; gap: 7px; }
-    .flower-row { min-height: 60px; display: flex; align-items: center; gap: 9px; padding: 8px 9px; border: 1px solid #e1e6ea; border-radius: 11px; background: #fff; cursor: pointer; transition: border-color .12s, background .12s, box-shadow .12s; }
+    .flower-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: start; }
+    .flower-row { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 7px; border: 2px solid #e1e6ea; border-radius: 12px; background: #fff; cursor: pointer; position: relative; transition: border-color .12s, background .12s, box-shadow .12s; }
     .flower-row:hover { border-color: #b0bec5; }
     .flower-row:focus-visible { outline: 3px solid rgba(31,59,115,.2); outline-offset: 1px; }
     .flower-row.on { border-color: #1F3B73; background: #F3F6FC; box-shadow: 0 2px 7px rgba(31,59,115,.1); }
-    .flower-thumb { width: 42px; height: 42px; flex: none; border-radius: 8px; object-fit: cover; background: #eceff1; }
-    .flower-info { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-    .flower-name { width: 100%; font-size: 13.5px; line-height: 1.35; font-weight: bold; word-break: keep-all; }
-    .grade { display: inline-flex; border-radius: 5px; padding: 2px 6px; color: #3E2723; font-size: 10px; font-weight: bold; }
+    .flower-thumb { width: 100%; height: auto; aspect-ratio: 1/1; border-radius: 9px; object-fit: cover; background: #eceff1; display: block; }
+    .flower-info { min-width: 0; display: flex; justify-content: center; }
+    .flower-name { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.35; font-weight: bold; text-align: center; word-break: keep-all; }
+    .grade { position: absolute; top: 11px; left: 11px; display: inline-flex; border-radius: 5px; padding: 2px 6px; color: #3E2723; font-size: 10px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,.18); }
     .g-ur-plus { background: #E6B8AF; } .g-ur { background: #F4CCCC; }
     .g-ssr { background: #FFF2CC; } .g-sr-plus { background: #B4A7D6; } .g-sr { background: #D9D2E9; }
-    .upgrade { width: 89px; flex: none; display: none; padding: 7px 5px; border: 1px solid #d3d9df; border-radius: 8px; background: #fff; color: #455A64; font-size: 11px; font-weight: bold; cursor: pointer; }
-    .flower-row.on .upgrade { display: block; }
+    .upgrade { width: 100%; visibility: hidden; padding: 6px 4px; border: 1px solid #d3d9df; border-radius: 7px; background: #fff; color: #455A64; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .flower-row.on .upgrade { visibility: visible; }
     .upgrade.set { border-color: #8E24AA; color: #8E24AA; background: #FCF5FE; }
-    .check { width: 24px; height: 24px; flex: none; display: flex; align-items: center; justify-content: center; border: 2px solid #cfd6dd; border-radius: 50%; background: #fff; color: transparent; font-size: 13px; font-weight: bold; }
+    .check { position: absolute; top: 10px; right: 10px; width: 23px; height: 23px; display: flex; align-items: center; justify-content: center; border: 2px solid #cfd6dd; border-radius: 50%; background: #fff; color: transparent; font-size: 13px; font-weight: bold; }
     .flower-row.on .check { border-color: #1F3B73; background: #1F3B73; color: #fff; }
     .empty, .loading, .error { padding: 28px 14px; border-radius: 12px; background: #fff; color: #78909C; text-align: center; font-size: 14px; line-height: 1.65; }
     .error { color: #C62828; background: #FFEBEE; }
@@ -62,9 +62,12 @@
     [hidden] { display: none !important; }
     @media (max-width: 390px) {
       .container { padding-left: 9px; padding-right: 9px; }
-      .flower-row { gap: 7px; padding: 8px; }
-      .flower-name { font-size: 13px; }
-      .upgrade { width: 82px; font-size: 10.5px; }
+      .flower-list { gap: 6px; }
+      .flower-row { gap: 5px; padding: 6px; }
+      .flower-name { font-size: 11.5px; }
+      .grade { top: 9px; left: 9px; }
+      .check { top: 8px; right: 8px; }
+      .upgrade { font-size: 10.5px; }
       .member-badge { max-width: 108px; overflow: hidden; text-overflow: ellipsis; }
     }
   </style>
