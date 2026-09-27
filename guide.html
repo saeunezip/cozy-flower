@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>백야 길드전 가이드</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="백야 길드전">
+  <meta property="og:title" content="백야 길드전 가이드">
+  <meta property="og:description" content="백야 길드전 주요 규칙을 카드뉴스로 확인하세요.">
+  <meta property="og:image" content="https://saeunezip.github.io/cozy-flower/guide/banner.png">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { overflow-x: hidden; background: linear-gradient(180deg, #eef3ff 0, #f7f7f8 180px, #f7f7f8 100%);
+           color: #263238; font-family: 'Malgun Gothic', sans-serif; }
+    button, a { font: inherit; -webkit-tap-highlight-color: transparent; }
+    .page { width: min(680px, 100%); margin: 0 auto; padding: 0 12px 34px; }
+    .guide-head { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+                  align-items: center; gap: 8px; margin: 0 -12px 14px; padding: max(12px, env(safe-area-inset-top)) 12px 11px;
+                  background: rgba(247,247,248,.94); border-bottom: 1px solid rgba(31,59,115,.08);
+                  backdrop-filter: blur(12px); }
+    .back-link, .doc-link { display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
+                            border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .back-link { padding: 0 11px; background: #e8ebf2; color: #1F3B73; }
+    .doc-link { padding: 0 12px; background: #1F3B73; color: #fff; box-shadow: 0 2px 7px rgba(31,59,115,.18); }
+    .head-title { min-width: 0; margin: 0; overflow: hidden; color: #152C57; font-size: 17px;
+                  text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+    .intro { margin: 0 0 12px; text-align: center; }
+    .intro strong { display: block; color: #152C57; font-size: 14px; }
+    .intro span { display: block; margin-top: 4px; color: #78909C; font-size: 12px; }
+    .viewer { position: relative; border-radius: 20px; background: #fff; box-shadow: 0 8px 28px rgba(21,44,87,.13);
+              overflow: hidden; touch-action: pan-y; }
+    .slide-stage { position: relative; aspect-ratio: 1 / 1; background: #fff; overflow: hidden; }
+    .slide-image { width: 100%; height: 100%; display: block; object-fit: contain; user-select: none; -webkit-user-drag: none;
+                   opacity: 1; transform: translateX(0); transition: opacity .16s ease, transform .16s ease; }
+    .slide-image.changing-next { opacity: .35; transform: translateX(-12px); }
+    .slide-image.changing-prev { opacity: .35; transform: translateX(12px); }
+    .arrow { position: absolute; z-index: 5; top: 50%; width: 44px; height: 52px; border: 0; border-radius: 13px;
+             background: rgba(21,44,87,.78); color: #fff; font-size: 29px; line-height: 1; cursor: pointer;
+             box-shadow: 0 3px 12px rgba(0,0,0,.2); transform: translateY(-50%); }
+    .arrow:active { transform: translateY(-50%) scale(.92); }
+    .arrow:focus-visible { outline: 3px solid rgba(94,130,210,.45); outline-offset: 2px; }
+    .arrow.prev { left: 10px; }
+    .arrow.next { right: 10px; }
+    .viewer-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px;
+                   padding: 9px 13px; border-top: 1px solid #eef1f4; background: #fff; }
+    .counter { flex: none; color: #1F3B73; font-size: 13px; font-weight: bold; }
+    .dots { min-width: 0; display: flex; justify-content: center; gap: 5px; }
+    .dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: #d2d8e2; cursor: pointer; }
+    .dot.active { width: 18px; border-radius: 999px; background: #1F3B73; }
+    .swipe-hint { flex: none; color: #90A4AE; font-size: 11px; }
+    .loading-note { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                    color: #90A4AE; font-size: 13px; pointer-events: none; }
+    @media (max-width: 430px) {
+      .page { padding-left: 9px; padding-right: 9px; }
+      .guide-head { margin-left: -9px; margin-right: -9px; padding-left: 9px; padding-right: 9px; }
+      .head-title { font-size: 15px; }
+      .back-link, .doc-link { min-height: 36px; padding-left: 9px; padding-right: 9px; font-size: 11px; }
+      .viewer { border-radius: 15px; }
+      .arrow { width: 40px; height: 48px; font-size: 26px; }
+      .arrow.prev { left: 7px; }
+      .arrow.next { right: 7px; }
+      .viewer-foot { padding-left: 10px; padding-right: 10px; }
+      .swipe-hint { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .slide-image { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="guide-head">
+      <a class="back-link" href="app.html">← 메인</a>
+      <h1 class="head-title">백야 길드전 가이드</h1>
+      <a class="doc-link" href="https://docs.google.com/document/d/1FCZVZZqPgzHEkQTUplzrrZSvGrlmfu1vo1OslKd8JjU/edit?tab=t.0" target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>
+    </header>
+
+    <p class="intro">
+      <strong>길드전 주요 규칙 10장</strong>
+      <span>좌우로 밀거나 화살표를 눌러 넘겨보세요.</span>
+    </p>
+
+    <section class="viewer" id="viewer" aria-label="길드전 가이드 카드뉴스">
+      <div class="slide-stage">
+        <div class="loading-note" id="loadingNote">가이드를 불러오는 중…</div>
+        <img class="slide-image" id="slideImage" src="guide/card-01.png" alt="백야 길드전 가이드 1장, 총 10장" draggable="false">
+        <button class="arrow prev" id="prevButton" type="button" aria-label="이전 이미지">‹</button>
+        <button class="arrow next" id="nextButton" type="button" aria-label="다음 이미지">›</button>
+      </div>
+      <div class="viewer-foot">
+        <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+        <div class="dots" id="dots" aria-label="가이드 페이지 선택"></div>
+        <span class="swipe-hint">스와이프 가능</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var slides = [];
+      for (var i = 1; i <= 10; i++) slides.push('guide/card-' + String(i).padStart(2, '0') + '.png');
+
+      var viewer = document.getElementById('viewer');
+      var image = document.getElementById('slideImage');
+      var counter = document.getElementById('counter');
+      var dots = document.getElementById('dots');
+      var loadingNote = document.getElementById('loadingNote');
+      var current = Math.max(0, Math.min(9, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+      var swipeStartX = null;
+      var changing = false;
+
+      slides.forEach(function (_, index) {
+        var dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'dot';
+        dot.setAttribute('aria-label', (index + 1) + '장으로 이동');
+        dot.addEventListener('click', function () { show(index, index >= current ? 1 : -1); });
+        dots.appendChild(dot);
+      });
+
+      function preload(index) {
+        var probe = new Image();
+        probe.src = slides[(index + slides.length) % slides.length];
+      }
+
+      function updateUi() {
+        counter.textContent = (current + 1) + ' / ' + slides.length;
+        image.alt = '백야 길드전 가이드 ' + (current + 1) + '장, 총 ' + slides.length + '장';
+        Array.prototype.forEach.call(dots.children, function (dot, index) {
+          dot.classList.toggle('active', index === current);
+          dot.setAttribute('aria-current', index === current ? 'page' : 'false');
+        });
+        history.replaceState(null, '', '#' + (current + 1));
+        preload(current - 1);
+        preload(current + 1);
+      }
+
+      function show(index, direction) {
+        if (changing) return;
+        var next = (index + slides.length) % slides.length;
+        if (next === current && image.complete) return;
+        changing = true;
+        image.classList.add(direction < 0 ? 'changing-prev' : 'changing-next');
+        window.setTimeout(function () {
+          current = next;
+          image.src = slides[current];
+          updateUi();
+        }, 100);
+      }
+
+      image.addEventListener('load', function () {
+        loadingNote.style.display = 'none';
+        image.classList.remove('changing-prev', 'changing-next');
+        changing = false;
+      });
+      image.addEventListener('error', function () {
+        loadingNote.textContent = '이미지를 불러오지 못했습니다.';
+        loadingNote.style.display = 'flex';
+        image.classList.remove('changing-prev', 'changing-next');
+        changing = false;
+      });
+      document.getElementById('prevButton').addEventListener('click', function () { show(current - 1, -1); });
+      document.getElementById('nextButton').addEventListener('click', function () { show(current + 1, 1); });
+      viewer.addEventListener('pointerdown', function (event) {
+        swipeStartX = event.clientX;
+      });
+      viewer.addEventListener('pointerup', function (event) {
+        if (swipeStartX == null) return;
+        var distance = event.clientX - swipeStartX;
+        swipeStartX = null;
+        if (Math.abs(distance) < 45) return;
+        show(current + (distance < 0 ? 1 : -1), distance < 0 ? 1 : -1);
+      });
+      viewer.addEventListener('pointercancel', function () { swipeStartX = null; });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft') show(current - 1, -1);
+        if (event.key === 'ArrowRight') show(current + 1, 1);
+      });
+
+      image.src = slides[current];
+      updateUi();
+      if (image.complete) {
+        loadingNote.style.display = 'none';
+        changing = false;
+      }
+    })();
+  </script>
+</body>
+</html>
