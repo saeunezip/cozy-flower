@@ -854,7 +854,7 @@
           })
           .then(function (j) {
             if (!j.ok) throw new Error("서버가 데이터를 주지 않았습니다.");
-            snap = j.snapshot;
+            snap = j.data;
             board = j.board || {};
             counts = j.counts || {};
             if (!snap) {

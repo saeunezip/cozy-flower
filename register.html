@@ -330,7 +330,7 @@
       document.getElementById('status').textContent = '총 ' + state.flowers.length + '종 중 ' + shown + '종 표시';
     }
 
-    function snapshotBaseline() {
+    function captureBaseline() {
       state.baseline = {};
       state.flowers.forEach(function (flower) {
         state.baseline[flower.flowerId] = { unlocked: flower.unlocked, upgrade: flower.upgrade };
@@ -357,7 +357,7 @@
         state.gradeFilter = 'all';
         state.stateFilter = 'all';
         document.getElementById('search').value = '';
-        snapshotBaseline();
+        captureBaseline();
         renderChips();
         renderFlowers();
         updateSummary();
@@ -396,7 +396,7 @@
           })
         });
         state.revision = data.revision;
-        snapshotBaseline();
+        captureBaseline();
         showNotice('저장했습니다. 메인과 임무 보드에도 새 도감이 반영됩니다.', 'ok');
       } catch (err) {
         showNotice(err.message, 'bad', err.status === 409 || (err.data && err.data.conflict));

@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="stylesheet" href="cozy-features.css?v=20260923-1">
   <meta name="robots" content="noindex">
   <title>길드전 계산기</title>
 
@@ -32,21 +31,7 @@
     body { font-family: 'Malgun Gothic', sans-serif; color: #263238; }
 
     /* =========================================================
-       등록/관리자 모드 — 기존 Apps Script 화면을 iframe으로 감싸는 부분.
-       ?page=register / ?page=admin 일 때만 씀. 그 외엔 완전히 숨김.
-       ========================================================= */
-    body.mode-wrap, body.mode-wrap html { height: 100%; overflow: hidden; }
-    #wrap { display: none; }
-    body.mode-wrap #wrap { position: fixed; inset: 0; overflow: hidden; display: block; }
-    #app  { position: absolute; left: 0; width: 100%; border: 0; display: block; }
-
-    #warn { position: fixed; left: 0; right: 0; bottom: 0; background: #263238; color: #fff;
-            font-size: 13px; padding: 13px 14px; display: none; z-index: 10; line-height: 1.7; }
-    #warn a { color: #8FD0FF; font-weight: bold; }
-
-    /* =========================================================
-       홈 모드 — 새 정적 메인화면. 시트/Apps Script를 전혀 거치지 않고
-       Worker(guild-flower-worker)에서 직접 데이터를 받아온다.
+       홈 모드 — Worker에서 직접 현재 데이터를 받아온다.
        ========================================================= */
     #home { display: none; }
     body.mode-home #home { display: block; }
@@ -61,7 +46,7 @@
 
     .me-pill-wrap { position: relative; flex: none; }
     .me-pill { background: rgba(255,255,255,.16); color: #fff; border: none; padding: 7px 14px; border-radius: 999px;
-               font-size: 13px; font-weight: bold; font-family: inherit; cursor: pointer; max-width: 116px;
+               font-size: 13px; font-weight: bold; font-family: inherit; cursor: pointer; max-width: 96px;
                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .me-pill:hover { background: rgba(255,255,255,.24); }
     .me-menu { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border-radius: 12px;
@@ -259,13 +244,6 @@
   </style>
 </head>
 <body>
-  <!-- ===== 등록/관리자 모드: iframe 감싸기 ===== -->
-  <div id="wrap"><iframe id="app" title="길드전 계산기"></iframe></div>
-  <div id="warn">
-    화면이 안 뜨나요? 브라우저가 이 방식을 막고 있을 수 있습니다.<br>
-    <a id="direct" href="#" target="_blank">원래 주소로 열기</a>
-  </div>
-
   <!-- ===== 홈 모드: 새 정적 메인화면 ===== -->
   <div id="home">
     <div class="container">
@@ -278,7 +256,7 @@
               <h1 class="app-title">백야</h1>
             </div>
             <div class="me-pill-wrap">
-              <button type="button" class="me-pill" id="mePillBtn" onclick="onMePillClick()">이름 선택</button>
+              <button type="button" class="me-pill" id="mePillBtn" onclick="toggleMeMenu()">이름 선택</button>
               <div class="me-menu" id="meMenu"></div>
             </div>
           </div>
@@ -302,10 +280,10 @@
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg></span>
             임무 추천 순위
           </button>
-          <button type="button" class="shortcut-tile" onclick="CozyFeatures.showMarket()">
+          <a class="shortcut-tile" href="register.html" id="registerLink">
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="12" r="2.2"/></svg></span>
-            거래소 의뢰
-          </button>
+            내 꽃 등록
+          </a>
           <a class="shortcut-tile" href="board.html">
             <span class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
             임무 보드
@@ -315,11 +293,6 @@
             cozytools
           </a>
         </div>
-
-        <section class="activity-section" id="activitySection">
-          <div class="activity-head"><h3>이 시간대 주로 활동하는 길드원</h3><span id="activityRange">시간표 설정 전</span></div>
-          <div id="activityMembers" class="activity-members">시간대 범위가 확정되면 표시됩니다.</div>
-        </section>
 
         <div class="qr-section">
           <h3>이 꽃은 새로고침 금지 <span class="nr-badge" id="nrCount"></span></h3>
@@ -353,9 +326,6 @@
           <a class="preview-link" href="board.html">임무 보드 전체 보기 →</a>
         </div>
       </div>
-
-      <div id="profileView" class="feature-view"></div>
-      <div id="marketView" class="feature-view"></div>
 
       <div id="recoView">
         <div class="reco-head">
@@ -413,62 +383,12 @@
     </div>
   </div>
 
-  <script src="mission-register.js?v=20260923-1"></script>
-  <script src="cozy-features.js?v=20260927-1"></script>
+  <script src="mission-register.js"></script>
   <script>
-    /* ===================================================================
-       배포된 웹앱 주소 (등록/관리자 모드에서만 씀). 재배포해도 이 주소는
-       바뀌지 않습니다. ('새 배포'를 만들면 주소가 바뀌니 그때만 여기를 고치세요)
-       =================================================================== */
-    var APP_URL = 'https://script.google.com/macros/s/AKfycbztf1sGbFAjXoha9Q6jG9AstztTfdjNGkVQ85cRSUXFEU-1RVreRMd-t26XKXtSfEGW/exec';
-
-    /* 구글 안내 배너를 가릴 높이(px). 주소 뒤에 ?crop=46 을 붙여서 바로 시험할 수 있습니다. */
-    var CROP_PX = 0;
-
-    /* 임무 보드 Worker — 메인화면 데이터(검색·미리보기·추천 순위·이미지)를 전부 여기서 직접 받는다.
-       Apps Script를 거치지 않으므로 구글 쪽 고정 지연이 없다. */
+    /* 메인화면 데이터(검색·미리보기·추천 순위·이미지)는 Worker에서 직접 받는다. */
     var API = 'https://guild-flower-worker.saeunezip.workers.dev';
     var IMG = API + '/icon/';
     var IMG_VER = '1';
-
-    /* ===================================================================
-       등록/관리자 모드 — 예전 app.html 그대로. Apps Script 화면을 iframe으로
-       감싸서 구글 안내 배너를 가린다.
-       =================================================================== */
-    function runWrapMode() {
-      var params = new URLSearchParams(location.search);
-
-      try {
-        var saved = sessionStorage.getItem('cropPx');
-        if (saved !== null) CROP_PX = parseInt(saved, 10) || 0;
-      } catch (err) {}
-
-      if (params.has('crop')) {
-        var c = parseInt(params.get('crop'), 10);
-        if (!isNaN(c)) {
-          CROP_PX = c;
-          try { sessionStorage.setItem('cropPx', String(c)); } catch (err) {}
-        }
-        params.delete('crop');
-      }
-
-      // 앱이 '감싸기 안에서 열렸다'는 것을 알 수 있게 표시를 붙입니다.
-      params.set('wrap', '1');
-
-      var src = APP_URL + '?' + params.toString();
-
-      var frame = document.getElementById('app');
-      frame.style.top    = (-CROP_PX) + 'px';
-      frame.style.height = 'calc(100% + ' + CROP_PX + 'px)';
-      frame.src = src;
-      document.getElementById('direct').href = src;
-
-      var loaded = false;
-      frame.addEventListener('load', function () { loaded = true; });
-      setTimeout(function () {
-        if (!loaded) document.getElementById('warn').style.display = 'block';
-      }, 7000);
-    }
 
     /* ===================================================================
        홈 모드 — 새 정적 메인화면
@@ -495,7 +415,8 @@
 
     function runHomeMode() {
       loadHomeData();
-      document.getElementById('mePillBtn').textContent = mePillText();
+      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      updateRegisterLink();
       document.addEventListener('click', function (ev) {
         if (!ev.target.closest('.search-wrap')) hideSearchDropdown();
         if (!ev.target.closest('.me-pill-wrap')) hideMeMenu();
@@ -508,9 +429,9 @@
         fetch(API + '/index', { cache: 'no-store' }).then(function (r) { return r.json(); })
       ]).then(function (results) {
         var boardRes = results[0], indexRes = results[1];
-        if (!boardRes || !boardRes.ok || !boardRes.snapshot) throw new Error('임무 보드 데이터를 받지 못했습니다.');
+        if (!boardRes || !boardRes.ok || !boardRes.data) throw new Error('임무 보드 데이터를 받지 못했습니다.');
 
-        snap   = boardRes.snapshot;
+        snap   = boardRes.data;
         board  = boardRes.board || {};
         counts = boardRes.counts || {};
         flowerIndex = {};
@@ -525,9 +446,8 @@
         renderCountBadge();
         renderPreview();
         renderNoReroll();
-        CozyFeatures.onDataLoaded();
 
-        var idxSnap = indexRes && indexRes.ok && indexRes.snapshot;
+        var idxSnap = indexRes && indexRes.ok && indexRes.data;
         if (idxSnap && Array.isArray(idxSnap.guild) && Array.isArray(idxSnap.task)) {
           allMemberData = idxSnap.guild;
           allTaskData   = idxSnap.task;
@@ -561,9 +481,6 @@
       if (!name) return '이름 선택';
       return name.length >= 4 ? name.slice(0, 3) + '...' : name;
     }
-    function mePillText() {
-      return meName ? truncateName(meName) + '  →' : '이름 선택';
-    }
     function renderMeMenu() {
       var menu = document.getElementById('meMenu');
       var members = snap.members || [];
@@ -574,22 +491,22 @@
     function toggleMeMenu() {
       document.getElementById('meMenu').classList.toggle('show');
     }
-    function onMePillClick() {
-      if (!meName) toggleMeMenu();
-      else CozyFeatures.showProfile(meName);
-    }
     function hideMeMenu() {
       document.getElementById('meMenu').classList.remove('show');
+    }
+    function updateRegisterLink() {
+      var link = document.getElementById('registerLink');
+      if (link) link.href = 'register.html' + (meName ? '?member=' + encodeURIComponent(meName) : '');
     }
     function pickMe(name) {
       meName = name;
       try { localStorage.setItem('boardMe', meName); } catch (e) {}
-      document.getElementById('mePillBtn').textContent = mePillText();
+      document.getElementById('mePillBtn').textContent = truncateName(meName);
+      updateRegisterLink();
       hideMeMenu();
       renderMeMenu();
       renderCountBadge();
       renderPreview();
-      CozyFeatures.onIdentityChanged();
     }
     function onToggleMine() {
       var box = document.getElementById('onlyMineToggle');
@@ -791,9 +708,8 @@
     }
 
     /* ---------- 보유 현황 / 보유자 팝업 ----------
-       페이지 로드시 이미 받아온 snap(Worker 스냅샷)을 그대로 씀. 정적 페이지라
-       google.script.run 폴백은 없음 — 못 받아왔으면 에러를 그대로 보여준다. */
-    function memberFlowersFromSnapshot(name) {
+       페이지 로드시 Worker에서 받은 현재 데이터를 그대로 쓴다. */
+    function memberFlowersFromCurrentData(name) {
       var bits = snap.unlocked[name];
       if (bits == null) return null;
       var rank = { 'UR+': 0, 'UR': 1, 'SSR': 2, 'SR+': 3, 'SR': 4 };
@@ -811,7 +727,7 @@
     }
     // 보유자를 "이 꽃은 새로고침 금지"와 같은 순위(유일한 최고등급 우선 > 개량)로 정렬한다 —
     // 이 꽃을 누구에게 먼저 맡기는 게 좋은지 한눈에 보이게.
-    function flowerHoldersFromSnapshot(flowerName) {
+    function flowerHoldersFromCurrentData(flowerName) {
       var idx = flowerIndex[flowerName];
       if (!idx) return null;
       var holders = [];
@@ -858,22 +774,12 @@
         '<span>' + esc(entry.name) + ' 순위</span>',
       );
       document.getElementById('modalBody').innerHTML = MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
-      CozyFeatures.decorateCandidateTags(document.getElementById('modalBody'));
     }
     document.getElementById('nrGrid').addEventListener('click', function (ev) {
       var el = ev.target.closest('[data-mr-nr-idx]');
       if (el) openNoRerollModal(parseInt(el.getAttribute('data-mr-nr-idx'), 10));
     });
     document.getElementById('modalBody').addEventListener('click', function (ev) {
-      var unassigned = ev.target.closest('[data-mr-nr-unassigned]');
-      if (unassigned && nrModalEntry) {
-        MissionRegister.quickAssign({
-          apiUrl: API, flower: nrModalEntry.name, grade: nrModalEntry.grade, member: '', board: board,
-          say: function (msg, isErr) { if (isErr) alert(msg); },
-          onDone: function () { closeModal(); loadHomeData(); }
-        });
-        return;
-      }
       var el = ev.target.closest('[data-mr-nr-name]');
       if (!el || !nrModalEntry) return;
       MissionRegister.quickAssign({
@@ -909,7 +815,7 @@
       openModal(name + ' 보유 현황');
       if (modalCache.member[name]) { renderMemberModal(modalCache.member[name]); return; }
       if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
-      var list = memberFlowersFromSnapshot(name);
+      var list = memberFlowersFromCurrentData(name);
       if (list == null) { modalError('일치하는 길드원을 찾지 못했습니다.'); return; }
       modalCache.member[name] = list;
       renderMemberModal(list);
@@ -937,7 +843,7 @@
       );
       if (modalCache.flower[name]) { renderFlowerModal(modalCache.flower[name]); return; }
       if (!snap) { modalError('데이터를 아직 불러오지 못했습니다.'); return; }
-      var r = flowerHoldersFromSnapshot(name);
+      var r = flowerHoldersFromCurrentData(name);
       if (r == null) { modalError('일치하는 꽃을 찾지 못했습니다.'); return; }
       modalCache.flower[name] = r;
       renderFlowerModal(r);
@@ -1111,7 +1017,7 @@
         var members = [];
         for (var i = 4; i <= 8; i++) {
           var v = String(row[i] == null ? '' : row[i]).trim();
-          if (v && v !== '-') members.push('<span><b>' + (i - 3) + '.</b> ' + esc(v) + CozyFeatures.memberTagsHtml(v) + '</span>');
+          if (v && v !== '-') members.push('<span><b>' + (i - 3) + '.</b> ' + esc(v) + '</span>');
         }
         html += '<div class="trow">' +
                   '<div class="ticon b-' + (GCLASS[g] || 'none') + '"' +
