@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>길드원 관리 · 백야</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #f7f7f8; }
+    body { font-family: 'Malgun Gothic', sans-serif; color: #263238; }
+    button, input { font: inherit; }
+    .container { width: min(620px, 100%); margin: auto; padding: 14px 12px 40px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .back { color: #1F3B73; background: #e8ebf2; text-decoration: none; border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: bold; }
+    h1 { margin: 0; color: #152C57; font-size: 21px; }
+    .panel { margin-bottom: 12px; padding: 15px; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .panel h2 { margin: 0 0 12px; color: #152C57; font-size: 16px; }
+    .row { display: flex; gap: 8px; }
+    input { min-width: 0; flex: 1; height: 43px; padding: 0 12px; border: 1px solid #dfe3e6; border-radius: 9px; outline: none; }
+    input:focus { border-color: #1F3B73; box-shadow: 0 0 0 3px rgba(31,59,115,.1); }
+    button { min-height: 43px; border: 0; border-radius: 9px; padding: 0 16px; background: #1F3B73; color: #fff; font-weight: bold; cursor: pointer; }
+    button:disabled { background: #b0bec5; cursor: default; }
+    .ghost { background: #fff; color: #546E7A; border: 1px solid #dfe3e6; }
+    .danger { min-height: 34px; padding: 0 11px; background: #fff; color: #c62828; border: 1px solid #ffcdd2; font-size: 12px; }
+    .note { margin: 10px 0 0; color: #78909C; font-size: 12px; line-height: 1.55; }
+    .status { display: none; margin-bottom: 12px; padding: 11px 13px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+    .status.show { display: block; background: #e8f5e9; color: #2e7d32; }
+    .status.bad { display: block; background: #ffebee; color: #b71c1c; }
+    .summary { margin-bottom: 8px; color: #78909C; font-size: 12px; }
+    .member { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid #eef1f3; }
+    .member:first-child { border-top: 0; }
+    .member-name { min-width: 0; flex: 1; font-weight: bold; }
+    .meta { color: #90a4ae; font-size: 11px; white-space: nowrap; }
+    .loading, .empty { padding: 25px 8px; color: #90a4ae; text-align: center; font-size: 13px; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <a class="back" href="app.html">← 메인</a>
+      <h1>길드원 관리</h1>
+    </header>
+
+    <div id="status" class="status"></div>
+
+    <section id="loginPanel" class="panel">
+      <h2>관리자 확인</h2>
+      <div class="row">
+        <input id="password" type="password" placeholder="관리자 비밀번호" autocomplete="current-password">
+        <button id="loginButton" type="button">확인</button>
+      </div>
+    </section>
+
+    <div id="main" hidden>
+      <section class="panel">
+        <h2>길드원 추가</h2>
+        <div class="row">
+          <input id="newMember" type="text" maxlength="20" placeholder="새 길드원 이름" autocomplete="off">
+          <button id="addButton" type="button">추가</button>
+        </div>
+        <p class="note">추가한 길드원은 빈 도감으로 시작하며 등록 페이지와 모든 길드원 선택 목록에 바로 나타납니다.</p>
+      </section>
+
+      <section class="panel">
+        <h2>길드원 목록</h2>
+        <div id="summary" class="summary"></div>
+        <div id="members"><div class="loading">불러오는 중…</div></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API = 'https://guild-flower-worker.saeunezip.workers.dev';
+    let password = '';
+    let busy = false;
+
+    const statusBox = document.getElementById('status');
+    const membersBox = document.getElementById('members');
+
+    function showStatus(message, bad) {
+      statusBox.className = 'status ' + (bad ? 'bad' : 'show');
+      statusBox.textContent = message;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearStatus() {
+      statusBox.className = 'status';
+      statusBox.textContent = '';
+    }
+
+    function setBusy(value) {
+      busy = value;
+      document.querySelectorAll('button, input').forEach(function (element) { element.disabled = value; });
+    }
+
+    async function api(action, extra) {
+      const response = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ action: action, pw: password }, extra || {})),
+      });
+      let data;
+      try { data = await response.json(); }
+      catch (error) { throw new Error('서버 응답을 읽지 못했습니다.'); }
+      if (!response.ok || !data.ok) throw new Error(data.error || '요청을 처리하지 못했습니다.');
+      return data;
+    }
+
+    function renderMembers(members) {
+      membersBox.innerHTML = '';
+      document.getElementById('summary').textContent = '현재 ' + members.length + '명';
+      if (!members.length) {
+        membersBox.innerHTML = '<div class="empty">등록된 길드원이 없습니다.</div>';
+        return;
+      }
+      members.forEach(function (member) {
+        const row = document.createElement('div');
+        row.className = 'member';
+        const name = document.createElement('div');
+        name.className = 'member-name';
+        name.textContent = member.name;
+        const meta = document.createElement('span');
+        meta.className = 'meta';
+        meta.textContent = (member.saved ? '도감 저장됨' : '초기 자료') + ' · 임무 ' + member.count + '회';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'danger';
+        remove.textContent = '삭제';
+        remove.onclick = function () { removeMember(member.name); };
+        row.appendChild(name);
+        row.appendChild(meta);
+        row.appendChild(remove);
+        membersBox.appendChild(row);
+      });
+    }
+
+    async function loadMembers() {
+      const data = await api('adminMembers');
+      renderMembers(data.members || []);
+    }
+
+    async function login() {
+      if (busy) return;
+      const value = document.getElementById('password').value;
+      if (!value) return;
+      password = value;
+      clearStatus(); setBusy(true);
+      try {
+        await loadMembers();
+        try { localStorage.setItem('boardPw', password); } catch (error) {}
+        document.getElementById('loginPanel').hidden = true;
+        document.getElementById('main').hidden = false;
+      } catch (error) {
+        password = '';
+        showStatus(error.message, true);
+      } finally { setBusy(false); }
+    }
+
+    async function addMember() {
+      if (busy) return;
+      const input = document.getElementById('newMember');
+      const name = input.value.trim();
+      if (!name) return;
+      clearStatus(); setBusy(true);
+      try {
+        await api('adminAddMember', { name: name });
+        input.value = '';
+        await loadMembers();
+        showStatus("'" + name + "' 길드원을 추가했습니다.");
+      } catch (error) { showStatus(error.message, true); }
+      finally { setBusy(false); }
+    }
+
+    async function removeMember(name) {
+      if (busy) return;
+      const typed = prompt(
+        '길드원과 연결된 도감·개량·임무 횟수·프로필을 삭제하고, 현재 보드 배정은 자유 배정으로 바꿉니다.\n' +
+        '해당 길드원의 꽃 의뢰도 함께 삭제됩니다.\n\n계속하려면 이름을 그대로 입력하세요:\n' + name
+      );
+      if (typed === null) return;
+      if (typed.trim() !== name) { showStatus('이름이 일치하지 않아 취소했습니다.', true); return; }
+      clearStatus(); setBusy(true);
+      try {
+        await api('adminRemoveMember', { name: name });
+        await loadMembers();
+        showStatus("'" + name + "' 길드원을 삭제했습니다.");
+      } catch (error) { showStatus(error.message, true); }
+      finally { setBusy(false); }
+    }
+
+    document.getElementById('loginButton').onclick = login;
+    document.getElementById('password').onkeydown = function (event) { if (event.key === 'Enter') login(); };
+    document.getElementById('addButton').onclick = addMember;
+    document.getElementById('newMember').onkeydown = function (event) { if (event.key === 'Enter') addMember(); };
+
+    try {
+      const saved = localStorage.getItem('boardPw') || '';
+      if (saved) { document.getElementById('password').value = saved; login(); }
+    } catch (error) {}
+  </script>
+</body>
+</html>

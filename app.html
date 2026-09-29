@@ -1155,8 +1155,7 @@
       registerParams.delete('page');
       location.replace('register.html' + (registerParams.toString() ? '?' + registerParams.toString() : ''));
     } else if (pageParam === 'admin') {
-      document.body.classList.add('mode-wrap');
-      runWrapMode();
+      location.replace('admin.html');
     } else {
       document.body.classList.add('mode-home');
       runHomeMode();
