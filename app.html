@@ -242,6 +242,10 @@
     .mholder-rank-badge { flex: none; min-width: 40px; text-align: center; font-size: 11px; font-weight: bold; color: #fff; background: #1F3B73; border-radius: 20px; padding: 3px 6px; }
     .mholder-rest-label { font-size: 12px; color: #90a4ae; margin: 12px 2px 6px; font-weight: bold; }
     .modal-title-thumb { width: 26px; height: 26px; border-radius: 7px; object-fit: cover; background: #eceff1; flex: none; }
+    .modal-title-thumb.rank-title-thumb { width: 44px; height: 44px; border-radius: 10px; }
+    .modal-title-label { min-width: 0; }
+    .modal-title-action { flex: none; border: 0; border-radius: 8px; padding: 7px 9px; background: #e8ebf2; color: #1F3B73; font-family: inherit; font-size: 11px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+    .mflower-grid .ticon { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
@@ -393,7 +397,7 @@
   </div>
 
   <script src="mission-register.js?v=20260923-1"></script>
-  <script src="cozy-features.js?v=20260930-1"></script>
+  <script src="cozy-features.js?v=20261001-1"></script>
   <script>
     /* 메인화면 데이터(검색·미리보기·추천 순위·이미지)는 Worker에서 직접 받는다. */
     var API = 'https://guild-flower-worker.saeunezip.workers.dev';
@@ -783,8 +787,9 @@
       nrModalEntry = entry;
       hideTip();
       openModalHtml(
-        '<img class="modal-title-thumb" src="' + imgUrl(entry.name) + '" alt="" onerror="this.style.display=\'none\'">' +
-        '<span>' + esc(entry.name) + ' 순위</span>',
+        '<img class="modal-title-thumb rank-title-thumb" src="' + imgUrl(entry.name) + '" alt="" onerror="this.style.display=\'none\'">' +
+        '<span class="modal-title-label">' + esc(entry.name) + ' 순위</span>' +
+        '<button type="button" class="modal-title-action" data-show-holders="' + esc(entry.name) + '">보유자 보기</button>',
       );
       document.getElementById('modalBody').innerHTML = MissionRegister.noRerollDetailHtml(entry, nrStats, nrUpgrades);
       CozyFeatures.decorateCandidateTags(document.getElementById('modalBody'));
@@ -848,12 +853,12 @@
       if (!list.length) { body.innerHTML = '<div class="modal-loading">보유한 꽃이 없습니다.</div>'; return; }
       var html = '<div class="mflower-grid">';
       list.forEach(function (f) {
-        html += '<div class="ticon b-' + (GCLASS[f.grade] || 'none') + '"' +
-                  ' data-name="' + esc(f.name) + '" data-grade="' + esc(f.grade) + '" data-plus="' + (f.upgrade || 0) + '">' +
+        html += '<button type="button" class="ticon b-' + (GCLASS[f.grade] || 'none') + '"' +
+                  ' data-holder-flower="' + esc(f.name) + '" aria-label="' + esc(f.name) + ' 보유자 보기">' +
                   '<div class="ph">준비중</div>' +
                   '<img loading="lazy" alt="" src="' + imgUrl(f.name) + '" onerror="this.style.display=\'none\'">' +
                   (f.upgrade ? '<span class="plus">+' + f.upgrade + '</span>' : '') +
-                '</div>';
+                '</button>';
       });
       body.innerHTML = html + '</div>';
     }
@@ -884,8 +889,9 @@
         else if (MissionRegister.sameTier(holders[i - 1], holders[i], r.stats, r.upgrades, r.flowerName, r.grade)) ranks.push(ranks[i - 1]);
         else ranks.push(i + 1);
       }
-      body.innerHTML = holders.map(function (n, i) {
-        if (ranks[i] > 10) return '';
+      var rest = [];
+      var html = holders.map(function (n, i) {
+        if (ranks[i] > 10) { rest.push(n); return ''; }
         var st = r.stats[n] || {};
         var up = (r.upgrades[n] || {})[r.flowerName] || 0;
         var note = MissionRegister.holderNote(st, r.grade, up);
@@ -899,9 +905,20 @@
           '<span class="mr-rank-note">' + esc(note) + '</span>' +
           '</div>';
       }).join('');
+      if (rest.length) {
+        html += '<div class="mr-rest-label">그 외 · ' + rest.length + '명</div>' +
+          '<div class="mr-rest-list">' + rest.map(function (n) {
+            return '<span class="mr-chip">' + esc(n) + '</span>';
+          }).join('') + '</div>';
+      }
+      body.innerHTML = html;
     }
 
     document.getElementById('modalOverlay').addEventListener('click', function (ev) {
+      var holdersButton = ev.target.closest('[data-show-holders]');
+      if (holdersButton) { openFlowerModal(holdersButton.getAttribute('data-show-holders')); return; }
+      var flowerButton = ev.target.closest('[data-holder-flower]');
+      if (flowerButton) { openFlowerModal(flowerButton.getAttribute('data-holder-flower')); return; }
       if (ev.target === this) closeModal();
     });
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeModal(); });
