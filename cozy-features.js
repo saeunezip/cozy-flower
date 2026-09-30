@@ -12,7 +12,7 @@
 
   function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]; }); }
   function members() { return global.snap && Array.isArray(global.snap.members) ? global.snap.members : []; }
-  function flowersOf(name) { return global.memberFlowersFromSnapshot && global.memberFlowersFromSnapshot(name) || []; }
+  function flowersOf(name) { return global.memberFlowersFromCurrentData && global.memberFlowersFromCurrentData(name) || []; }
   function ownName() { return global.meName || ""; }
   function image(name) { return global.imgUrl(name); }
   function flowerThumb(name) { return '<span class="flower-thumb"><span aria-hidden="true">✿</span><img src="'+image(name)+'" alt="" onerror="this.remove()"></span>'; }
