@@ -246,6 +246,7 @@
     .modal-title-label { min-width: 0; }
     .modal-title-action { flex: none; border: 0; border-radius: 8px; padding: 7px 9px; background: #e8ebf2; color: #1F3B73; font-family: inherit; font-size: 11px; font-weight: bold; white-space: nowrap; cursor: pointer; }
     .mflower-grid .ticon { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .mr-chip-upgrade { margin-left: 4px; color: #8E24AA; }
   </style>
 </head>
 <body>
@@ -908,7 +909,8 @@
       if (rest.length) {
         html += '<div class="mr-rest-label">그 외 · ' + rest.length + '명</div>' +
           '<div class="mr-rest-list">' + rest.map(function (n) {
-            return '<span class="mr-chip">' + esc(n) + '</span>';
+            var up = (r.upgrades[n] || {})[r.flowerName] || 0;
+            return '<span class="mr-chip">' + esc(n) + (up ? '<span class="mr-chip-upgrade">+' + up + '</span>' : '') + '</span>';
           }).join('') + '</div>';
       }
       body.innerHTML = html;
