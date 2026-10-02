@@ -503,15 +503,15 @@
     async function removeFlower(flower) {
       if (busy || flowerOrderMode) return;
       const reuseTestId = flower.flowerId === '2137' && flower.name === '테스트';
-      const typed = prompt(
-        '이 꽃의 도감 항목과 모든 길드원의 보유·개량 기록에서 삭제합니다.\n' +
-        (reuseTestId
-          ? '테스트용 ID 2137은 다음 SR/SR+ 꽃 추가 때 한 번 다시 사용합니다.\n'
-          : '삭제된 고유 ID는 다시 사용하지 않습니다.\n') +
-        '\n계속하려면 꽃 이름을 그대로 입력하세요:\n' + flower.name
-      );
-      if (typed === null) return;
-      if (typed.trim() !== flower.name) { showStatus('꽃 이름이 일치하지 않아 삭제하지 않았습니다.', true); return; }
+      if (!reuseTestId) {
+        const typed = prompt(
+          '이 꽃의 도감 항목과 모든 길드원의 보유·개량 기록에서 삭제합니다.\n' +
+          '삭제된 고유 ID는 다시 사용하지 않습니다.\n' +
+          '\n계속하려면 꽃 이름을 그대로 입력하세요:\n' + flower.name
+        );
+        if (typed === null) return;
+        if (typed.trim() !== flower.name) { showStatus('꽃 이름이 일치하지 않아 삭제하지 않았습니다.', true); return; }
+      }
       clearStatus(); setBusy(true);
       try {
         const result = await api('adminRemoveFlower', {
