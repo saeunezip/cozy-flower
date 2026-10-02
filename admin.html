@@ -56,11 +56,12 @@
     .grade-sr { background: #D9D2E9; } .grade-none { background: #E0E0E0; }
     .flower-name { min-width: 0; flex: 1; overflow: hidden; font-size: 13px; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
     .image-button { min-height: 34px; padding: 0 10px; border: 1px solid #dfe3e6; background: #fff; color: #546E7A; font-size: 12px; }
+    .flower-delete { min-height: 34px; padding: 0 9px; }
     .order-toggle { display: inline-flex; align-items: center; justify-content: center; width: 38px; min-height: 36px; padding: 0; border: 1px solid #dfe3e6; background: #fff; color: #1F3B73; font-size: 19px; }
     .order-toggle.active { border-color: #1F3B73; background: #1F3B73; color: #fff; }
     .drag-handle { display: none; width: 38px; min-height: 38px; padding: 0; border: 1px solid #dfe3e6; background: #fff; color: #1F3B73; font-size: 22px; line-height: 1; touch-action: none; user-select: none; }
     .flower-order-mode .drag-handle { display: inline-flex; align-items: center; justify-content: center; }
-    .flower-order-mode .image-button { display: none; }
+    .flower-order-mode .image-button, .flower-order-mode .flower-delete { display: none; }
     .order-actions { display: flex; gap: 8px; margin-top: 10px; }
     .order-actions button { flex: 1; }
     .order-help { margin: 9px 0 0; color: #546E7A; font-size: 12px; line-height: 1.5; }
@@ -475,6 +476,12 @@
         imageButton.textContent = '이미지 등록';
         imageButton.onclick = function () { openIconModal(flower.name); };
 
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'danger flower-delete';
+        removeButton.textContent = '삭제';
+        removeButton.onclick = function () { removeFlower(flower); };
+
         const handle = document.createElement('button');
         handle.type = 'button';
         handle.className = 'drag-handle';
@@ -486,10 +493,33 @@
         row.appendChild(grade);
         row.appendChild(name);
         row.appendChild(imageButton);
+        row.appendChild(removeButton);
         row.appendChild(handle);
         flowersBox.appendChild(row);
       });
       syncControlState();
+    }
+
+    async function removeFlower(flower) {
+      if (busy || flowerOrderMode) return;
+      const typed = prompt(
+        '이 꽃의 도감 항목과 모든 길드원의 보유·개량 기록에서 삭제합니다.\n' +
+        '삭제된 고유 ID는 다시 사용하지 않습니다.\n\n계속하려면 꽃 이름을 그대로 입력하세요:\n' + flower.name
+      );
+      if (typed === null) return;
+      if (typed.trim() !== flower.name) { showStatus('꽃 이름이 일치하지 않아 삭제하지 않았습니다.', true); return; }
+      clearStatus(); setBusy(true);
+      try {
+        const result = await api('adminRemoveFlower', {
+          flowerId: flower.flowerId,
+          expectedRevision: catalogRevision,
+        });
+        await loadFlowers();
+        showStatus("'" + result.name + "' 꽃을 삭제했습니다.");
+      } catch (error) {
+        try { await loadFlowers(); } catch (loadError) {}
+        showStatus(error.message, true);
+      } finally { setBusy(false); }
     }
 
     function setFlowerOrderMode(value) {
