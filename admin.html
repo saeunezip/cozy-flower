@@ -9,13 +9,15 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; background: #f7f7f8; }
     body { font-family: 'Malgun Gothic', sans-serif; color: #263238; }
-    button, input { font: inherit; }
+    button, input, select { font: inherit; }
     .container { width: min(620px, 100%); margin: auto; padding: 14px 12px 40px; }
     .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .back { color: #1F3B73; background: #e8ebf2; text-decoration: none; border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: bold; }
     h1 { margin: 0; color: #152C57; font-size: 21px; }
     .panel { margin-bottom: 12px; padding: 15px; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     .panel h2 { margin: 0 0 12px; color: #152C57; font-size: 16px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .panel-head h2 { margin: 0; }
     .row { display: flex; gap: 8px; }
     input { min-width: 0; flex: 1; height: 43px; padding: 0 12px; border: 1px solid #dfe3e6; border-radius: 9px; outline: none; }
     input:focus { border-color: #1F3B73; box-shadow: 0 0 0 3px rgba(31,59,115,.1); }
@@ -35,6 +37,45 @@
     .member-name { min-width: 0; flex: 1; font-weight: bold; }
     .meta { color: #90a4ae; font-size: 11px; white-space: nowrap; }
     .loading, .empty { padding: 25px 8px; color: #90a4ae; text-align: center; font-size: 13px; }
+    .flower-tools { display: flex; gap: 8px; margin-bottom: 8px; }
+    .flower { display: flex; align-items: center; gap: 9px; min-height: 56px; border-top: 1px solid #eef1f3; transition: transform .12s, box-shadow .12s, background .12s; }
+    .flower:first-child { border-top: 0; }
+    .flower.dragging { position: relative; z-index: 2; border-radius: 10px; background: #eef2fb; box-shadow: 0 7px 20px rgba(21,44,87,.18); }
+    .flower-thumb-wrap { position: relative; width: 42px; height: 42px; flex: none; }
+    .flower-thumb, .flower-thumb-fallback { position: absolute; inset: 0; width: 42px; height: 42px; border-radius: 8px; }
+    .flower-thumb { object-fit: cover; }
+    .flower-thumb-fallback { display: flex; align-items: center; justify-content: center; background: #f0f0f2; color: #b0bec5; font-size: 9px; }
+    .grade { flex: none; padding: 2px 7px; border-radius: 5px; color: #3E2723; font-size: 11px; font-weight: bold; }
+    .grade-ur-plus { background: #E6B8AF; } .grade-ur { background: #F4CCCC; }
+    .grade-ssr { background: #FFF2CC; } .grade-sr-plus { background: #B4A7D6; }
+    .grade-sr { background: #D9D2E9; } .grade-none { background: #E0E0E0; }
+    .flower-name { min-width: 0; flex: 1; overflow: hidden; font-size: 13px; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+    .image-button { min-height: 34px; padding: 0 10px; border: 1px solid #dfe3e6; background: #fff; color: #546E7A; font-size: 12px; }
+    .order-toggle { display: inline-flex; align-items: center; justify-content: center; width: 38px; min-height: 36px; padding: 0; border: 1px solid #dfe3e6; background: #fff; color: #1F3B73; font-size: 19px; }
+    .order-toggle.active { border-color: #1F3B73; background: #1F3B73; color: #fff; }
+    .drag-handle { display: none; width: 38px; min-height: 38px; padding: 0; border: 1px solid #dfe3e6; background: #fff; color: #1F3B73; font-size: 22px; line-height: 1; touch-action: none; user-select: none; }
+    .flower-order-mode .drag-handle { display: inline-flex; align-items: center; justify-content: center; }
+    .flower-order-mode .image-button { display: none; }
+    .order-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .order-actions button { flex: 1; }
+    .order-help { margin: 9px 0 0; color: #546E7A; font-size: 12px; line-height: 1.5; }
+    body.flower-dragging { user-select: none; }
+    .modal-overlay { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 12px; background: rgba(21,44,87,.55); }
+    .modal-overlay.show { display: flex; }
+    .modal-box { width: min(420px,100%); max-height: 88vh; overflow-y: auto; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #eceff1; }
+    .modal-title { color: #152C57; font-size: 15px; font-weight: bold; }
+    .modal-close { min-height: 30px; padding: 4px; background: none; color: #90a4ae; font-size: 20px; line-height: 1; }
+    .modal-body { padding: 16px; }
+    .modal-foot { padding: 0 16px 16px; }
+    #iconCanvas { display: block; width: 160px; height: 160px; margin: 12px auto; border: 1px solid #eceff1; border-radius: 10px; background: #f0f0f2; }
+    .nudge-pad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; grid-template-columns: 42px 42px 42px; gap: 4px; justify-content: center; margin: 10px 0; }
+    .nudge { min-height: 38px; padding: 0; }
+    .box-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .box-inputs input { height: 38px; padding: 0 8px; font-size: 13px; }
+    details summary { margin-top: 10px; color: #546E7A; font-size: 13px; cursor: pointer; }
+    .icon-message { margin-top: 10px; padding: 10px 12px; border-radius: 9px; background: #e8f5e9; color: #2e7d32; font-size: 12px; line-height: 1.5; }
+    .icon-message.bad { background: #ffebee; color: #b71c1c; }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -42,7 +83,7 @@
   <main class="container">
     <header class="topbar">
       <a class="back" href="app.html">← 메인</a>
-      <h1>길드원 관리</h1>
+      <h1>관리자</h1>
     </header>
 
     <div id="status" class="status"></div>
@@ -83,8 +124,63 @@
         </div>
         <p class="note">새 꽃은 선택한 등급의 맨 뒤에 추가됩니다. 같은 이름이 이미 있으면 중복 등록하지 않습니다.</p>
       </section>
+
+      <section class="panel" id="flowerListPanel">
+        <div class="panel-head">
+          <h2>꽃 목록</h2>
+          <button id="toggleFlowerOrderButton" class="order-toggle" type="button" title="도감 순서 변경" aria-label="도감 순서 변경" aria-pressed="false">⇅</button>
+        </div>
+        <div class="flower-tools">
+          <input id="flowerSearch" type="search" placeholder="꽃 이름 검색" autocomplete="off">
+        </div>
+        <div id="flowerSummary" class="summary"></div>
+        <div id="flowers"><div class="loading">불러오는 중…</div></div>
+        <p id="flowerOrderHelp" class="order-help" hidden>오른쪽의 = 표시를 길게 누른 뒤 위아래로 끌어 도감 순서를 바꿔 주세요.</p>
+        <div id="flowerOrderActions" class="order-actions" hidden>
+          <button id="cancelFlowerOrderButton" class="ghost" type="button">취소</button>
+          <button id="saveFlowerOrderButton" type="button" disabled>순서 저장</button>
+        </div>
+      </section>
     </div>
   </main>
+
+  <div class="modal-overlay" id="iconModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <span class="modal-title" id="iconModalTitle">이미지 등록</span>
+        <button class="modal-close" type="button" id="closeIconModalButton" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="file" id="iconFile" accept="image/*">
+        <div id="iconPreviewWrap" hidden>
+          <canvas id="iconCanvas" width="200" height="200"></canvas>
+          <div class="nudge-pad">
+            <button type="button" class="ghost nudge" style="grid-area:up" data-nudge="0,-5">▲</button>
+            <button type="button" class="ghost nudge" style="grid-area:left" data-nudge="-5,0">◀</button>
+            <button type="button" class="ghost nudge" style="grid-area:right" data-nudge="5,0">▶</button>
+            <button type="button" class="ghost nudge" style="grid-area:down" data-nudge="0,5">▼</button>
+          </div>
+          <div class="row" style="justify-content:center">
+            <button type="button" class="ghost" id="resetCropButton">기본 위치로</button>
+          </div>
+          <details>
+            <summary>픽셀로 직접 지정</summary>
+            <div class="box-inputs">
+              <input type="number" id="boxX1" placeholder="x1">
+              <input type="number" id="boxY1" placeholder="y1">
+              <input type="number" id="boxX2" placeholder="x2">
+              <input type="number" id="boxY2" placeholder="y2">
+            </div>
+            <button type="button" class="ghost" id="applyCropButton" style="width:100%;margin-top:8px">이 위치로 자르기</button>
+          </details>
+        </div>
+        <div id="iconMessage"></div>
+      </div>
+      <div class="modal-foot">
+        <button id="iconUploadButton" type="button" style="width:100%" disabled>이미지 등록</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const API = 'https://guild-flower-worker.saeunezip.workers.dev';
@@ -92,9 +188,20 @@
     let busy = false;
     let members = [];
     let orderDirty = false;
+    let flowers = [];
+    let catalogRevision = 0;
+    let flowerOrderMode = false;
+    let flowerOrderDirty = false;
+    let flowerOrderOriginal = [];
+    let flowerDrag = null;
+    const iconVersion = {};
+    const GRADE_CLASS = { 'UR+':'grade-ur-plus', 'UR':'grade-ur', 'SSR':'grade-ssr', 'SR+':'grade-sr-plus', 'SR':'grade-sr' };
+    const DEFAULT_PIXEL_BOX = [112, 1067, 331, 1286];
+    const iconState = { flowerName: '', img: null, box: null };
 
     const statusBox = document.getElementById('status');
     const membersBox = document.getElementById('members');
+    const flowersBox = document.getElementById('flowers');
 
     function showStatus(message, bad) {
       statusBox.className = 'status ' + (bad ? 'bad' : 'show');
@@ -109,8 +216,19 @@
 
     function setBusy(value) {
       busy = value;
-      document.querySelectorAll('button, input').forEach(function (element) { element.disabled = value; });
-      if (!value) document.getElementById('saveOrderButton').disabled = !orderDirty;
+      document.querySelectorAll('button, input, select').forEach(function (element) { element.disabled = value; });
+      if (!value) syncControlState();
+    }
+
+    function syncControlState() {
+      if (busy) return;
+      document.getElementById('saveOrderButton').disabled = !orderDirty;
+      document.getElementById('saveFlowerOrderButton').disabled = !flowerOrderDirty;
+      document.getElementById('flowerSearch').disabled = flowerOrderMode;
+      document.getElementById('iconUploadButton').disabled = !iconState.img;
+      document.getElementById('newFlower').disabled = flowerOrderMode;
+      document.getElementById('newFlowerGrade').disabled = flowerOrderMode;
+      document.getElementById('addFlowerButton').disabled = flowerOrderMode;
     }
 
     async function api(action, extra) {
@@ -199,7 +317,7 @@
       password = value;
       clearStatus(); setBusy(true);
       try {
-        await loadMembers();
+        await Promise.all([loadMembers(), loadFlowers()]);
         try { localStorage.setItem('boardPw', password); } catch (error) {}
         document.getElementById('loginPanel').hidden = true;
         document.getElementById('main').hidden = false;
@@ -251,9 +369,315 @@
       try {
         const result = await api('addFlowersToCatalog', { flowers: [{ name: name, grade: grade }] });
         input.value = '';
+        await loadFlowers();
         showStatus(result.added ? "'" + name + "' 꽃을 " + grade + ' 등급 맨 뒤에 추가했습니다.' : "'" + name + "' 꽃은 이미 등록되어 있습니다.");
       } catch (error) { showStatus(error.message, true); }
       finally { setBusy(false); }
+    }
+
+    async function loadFlowers() {
+      const response = await fetch(API + '/catalog?admin=' + Date.now(), { cache: 'no-store' });
+      let data;
+      try { data = await response.json(); }
+      catch (error) { throw new Error('꽃 목록을 읽지 못했습니다.'); }
+      if (!response.ok || !data.ok || !data.catalog) throw new Error(data.error || '꽃 목록을 불러오지 못했습니다.');
+      catalogRevision = Number(data.catalog.revision) || 0;
+      flowers = (data.catalog.flowers || []).slice().sort(function (a, b) {
+        return Number(a.catalogOrder) - Number(b.catalogOrder) || String(a.flowerId).localeCompare(String(b.flowerId));
+      });
+      renderFlowers();
+    }
+
+    function renderFlowers() {
+      const query = flowerOrderMode ? '' : document.getElementById('flowerSearch').value.trim().toLowerCase();
+      const list = query ? flowers.filter(function (flower) { return flower.name.toLowerCase().includes(query); }) : flowers;
+      document.getElementById('flowerSummary').textContent = flowerOrderMode
+        ? '순서 변경 중 · 전체 ' + flowers.length + '개'
+        : (query ? '검색 결과 ' + list.length + '개 · 전체 ' + flowers.length + '개' : '현재 ' + flowers.length + '개');
+      document.getElementById('flowerListPanel').classList.toggle('flower-order-mode', flowerOrderMode);
+      document.getElementById('flowerOrderHelp').hidden = !flowerOrderMode;
+      document.getElementById('flowerOrderActions').hidden = !flowerOrderMode;
+      const toggle = document.getElementById('toggleFlowerOrderButton');
+      toggle.classList.toggle('active', flowerOrderMode);
+      toggle.setAttribute('aria-pressed', flowerOrderMode ? 'true' : 'false');
+      toggle.title = flowerOrderMode ? '순서 변경 취소' : '도감 순서 변경';
+
+      flowersBox.innerHTML = '';
+      flowersBox.classList.toggle('flower-order-mode', flowerOrderMode);
+      if (!list.length) {
+        flowersBox.innerHTML = '<div class="empty">일치하는 꽃이 없습니다.</div>';
+        syncControlState();
+        return;
+      }
+
+      list.forEach(function (flower) {
+        const row = document.createElement('div');
+        row.className = 'flower';
+        row.dataset.flowerId = flower.flowerId;
+
+        const thumbWrap = document.createElement('span');
+        thumbWrap.className = 'flower-thumb-wrap';
+        const fallback = document.createElement('span');
+        fallback.className = 'flower-thumb-fallback';
+        fallback.textContent = '준비중';
+        const image = document.createElement('img');
+        image.className = 'flower-thumb';
+        image.loading = 'lazy';
+        image.alt = '';
+        image.src = API + '/icon/' + encodeURIComponent(flower.name) + '.webp?v=' + (iconVersion[flower.name] || 1);
+        image.onerror = function () { image.style.display = 'none'; };
+        thumbWrap.appendChild(fallback);
+        thumbWrap.appendChild(image);
+
+        const grade = document.createElement('span');
+        grade.className = 'grade ' + (GRADE_CLASS[flower.grade] || 'grade-none');
+        grade.textContent = flower.grade || '?';
+        const name = document.createElement('span');
+        name.className = 'flower-name';
+        name.textContent = flower.name;
+
+        const imageButton = document.createElement('button');
+        imageButton.type = 'button';
+        imageButton.className = 'image-button';
+        imageButton.textContent = '이미지';
+        imageButton.onclick = function () { openIconModal(flower.name); };
+
+        const handle = document.createElement('button');
+        handle.type = 'button';
+        handle.className = 'drag-handle';
+        handle.textContent = '=';
+        handle.setAttribute('aria-label', flower.name + ' 순서 이동');
+        handle.addEventListener('pointerdown', startFlowerDrag);
+
+        row.appendChild(thumbWrap);
+        row.appendChild(grade);
+        row.appendChild(name);
+        row.appendChild(imageButton);
+        row.appendChild(handle);
+        flowersBox.appendChild(row);
+      });
+      syncControlState();
+    }
+
+    function setFlowerOrderMode(value) {
+      if (busy) return;
+      if (value) {
+        flowerOrderOriginal = flowers.map(function (flower) { return flower.flowerId; });
+        flowerOrderDirty = false;
+        document.getElementById('flowerSearch').value = '';
+      }
+      flowerOrderMode = value;
+      renderFlowers();
+    }
+
+    function cancelFlowerOrder() {
+      const byId = new Map(flowers.map(function (flower) { return [flower.flowerId, flower]; }));
+      flowers = flowerOrderOriginal.map(function (flowerId) { return byId.get(flowerId); }).filter(Boolean);
+      flowerOrderMode = false;
+      flowerOrderDirty = false;
+      renderFlowers();
+    }
+
+    async function saveFlowerOrder() {
+      if (busy || !flowerOrderMode || !flowerOrderDirty) return;
+      clearStatus(); setBusy(true);
+      try {
+        const result = await api('adminReorderFlowers', {
+          flowerIds: flowers.map(function (flower) { return flower.flowerId; }),
+          expectedRevision: catalogRevision,
+        });
+        catalogRevision = result.revision;
+        flowerOrderMode = false;
+        flowerOrderDirty = false;
+        await loadFlowers();
+        showStatus('꽃 도감 순서를 저장했습니다.');
+      } catch (error) {
+        flowerOrderMode = false;
+        flowerOrderDirty = false;
+        try { await loadFlowers(); } catch (loadError) {}
+        showStatus(error.message, true);
+      } finally { setBusy(false); }
+    }
+
+    function startFlowerDrag(event) {
+      if (!flowerOrderMode || busy || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      const handle = event.currentTarget;
+      const row = handle.closest('.flower');
+      flowerDrag = {
+        pointerId: event.pointerId,
+        handle: handle,
+        row: row,
+        active: false,
+        timer: setTimeout(function () {
+          if (!flowerDrag || flowerDrag.pointerId !== event.pointerId) return;
+          flowerDrag.active = true;
+          row.classList.add('dragging');
+          document.body.classList.add('flower-dragging');
+          if (navigator.vibrate) navigator.vibrate(20);
+        }, 300),
+      };
+      try { handle.setPointerCapture(event.pointerId); } catch (error) {}
+    }
+
+    function moveFlowerDrag(event) {
+      if (!flowerDrag || flowerDrag.pointerId !== event.pointerId || !flowerDrag.active) return;
+      event.preventDefault();
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const over = target && target.closest('.flower');
+      if (!over || over === flowerDrag.row || over.parentElement !== flowersBox) return;
+      const rect = over.getBoundingClientRect();
+      flowersBox.insertBefore(flowerDrag.row, event.clientY < rect.top + rect.height / 2 ? over : over.nextSibling);
+    }
+
+    function endFlowerDrag(event) {
+      if (!flowerDrag || flowerDrag.pointerId !== event.pointerId) return;
+      clearTimeout(flowerDrag.timer);
+      const wasActive = flowerDrag.active;
+      flowerDrag.row.classList.remove('dragging');
+      document.body.classList.remove('flower-dragging');
+      try { flowerDrag.handle.releasePointerCapture(event.pointerId); } catch (error) {}
+      flowerDrag = null;
+      if (!wasActive) return;
+
+      const byId = new Map(flowers.map(function (flower) { return [flower.flowerId, flower]; }));
+      flowers = Array.from(flowersBox.querySelectorAll('.flower')).map(function (row) {
+        return byId.get(row.dataset.flowerId);
+      }).filter(Boolean);
+      flowerOrderDirty = flowers.some(function (flower, index) { return flower.flowerId !== flowerOrderOriginal[index]; });
+      renderFlowers();
+    }
+
+    function iconMessage(message, bad) {
+      const box = document.getElementById('iconMessage');
+      box.className = message ? 'icon-message' + (bad ? ' bad' : '') : '';
+      box.textContent = message || '';
+    }
+
+    function openIconModal(flowerName) {
+      iconState.flowerName = flowerName;
+      iconState.img = null;
+      iconState.box = null;
+      document.getElementById('iconModalTitle').textContent = flowerName + ' 이미지 등록';
+      document.getElementById('iconFile').value = '';
+      document.getElementById('iconPreviewWrap').hidden = true;
+      document.getElementById('iconCanvas').getContext('2d').clearRect(0, 0, 200, 200);
+      iconMessage('');
+      document.getElementById('iconModal').classList.add('show');
+      syncControlState();
+    }
+
+    function closeIconModal() {
+      document.getElementById('iconModal').classList.remove('show');
+      iconState.img = null;
+      iconState.box = null;
+      syncControlState();
+    }
+
+    function squareBox(x1, y1, x2, y2, naturalWidth, naturalHeight) {
+      x1 = Math.max(0, Math.min(x1, naturalWidth));
+      y1 = Math.max(0, Math.min(y1, naturalHeight));
+      x2 = Math.max(0, Math.min(x2, naturalWidth));
+      y2 = Math.max(0, Math.min(y2, naturalHeight));
+      const width = x2 - x1;
+      const height = y2 - y1;
+      if (width <= 0 || height <= 0) {
+        const size = Math.min(naturalWidth, naturalHeight);
+        return { x: (naturalWidth - size) / 2, y: (naturalHeight - size) / 2, w: size, h: size };
+      }
+      const size = Math.min(width, height);
+      return { x: x1 + (width - size) / 2, y: y1 + (height - size) / 2, w: size, h: size };
+    }
+
+    function setCropBox(box) {
+      iconState.box = box;
+      document.getElementById('boxX1').value = Math.round(box.x);
+      document.getElementById('boxY1').value = Math.round(box.y);
+      document.getElementById('boxX2').value = Math.round(box.x + box.w);
+      document.getElementById('boxY2').value = Math.round(box.y + box.h);
+      const context = document.getElementById('iconCanvas').getContext('2d');
+      context.clearRect(0, 0, 200, 200);
+      context.drawImage(iconState.img, box.x, box.y, box.w, box.h, 0, 0, 200, 200);
+    }
+
+    function resetCrop() {
+      if (!iconState.img) return;
+      setCropBox(squareBox(DEFAULT_PIXEL_BOX[0], DEFAULT_PIXEL_BOX[1], DEFAULT_PIXEL_BOX[2], DEFAULT_PIXEL_BOX[3], iconState.img.naturalWidth, iconState.img.naturalHeight));
+    }
+
+    function applyManualCrop() {
+      if (!iconState.img) return;
+      const values = ['boxX1','boxY1','boxX2','boxY2'].map(function (id) { return Number(document.getElementById(id).value); });
+      if (values.some(Number.isNaN) || values[2] <= values[0] || values[3] <= values[1]) {
+        iconMessage('위치 값이 올바르지 않습니다.', true);
+        return;
+      }
+      setCropBox(squareBox(values[0], values[1], values[2], values[3], iconState.img.naturalWidth, iconState.img.naturalHeight));
+    }
+
+    function nudgeCrop(dx, dy) {
+      if (!iconState.img || !iconState.box) return;
+      const box = iconState.box;
+      setCropBox({
+        x: Math.max(0, Math.min(box.x + dx, iconState.img.naturalWidth - box.w)),
+        y: Math.max(0, Math.min(box.y + dy, iconState.img.naturalHeight - box.h)),
+        w: box.w,
+        h: box.h,
+      });
+    }
+
+    function readIconFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      iconMessage('');
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = function () {
+        URL.revokeObjectURL(url);
+        iconState.img = image;
+        document.getElementById('iconPreviewWrap').hidden = false;
+        resetCrop();
+        syncControlState();
+      };
+      image.onerror = function () {
+        URL.revokeObjectURL(url);
+        iconMessage('이미지를 읽지 못했습니다.', true);
+      };
+      image.src = url;
+    }
+
+    function uploadIcon() {
+      if (!iconState.img || busy) return;
+      const button = document.getElementById('iconUploadButton');
+      button.disabled = true;
+      button.textContent = '등록 중…';
+      document.getElementById('iconCanvas').toBlob(async function (blob) {
+        if (!blob || blob.type !== 'image/webp') {
+          iconMessage('이 브라우저에서는 WebP 이미지를 만들 수 없습니다. 크롬에서 다시 시도해 주세요.', true);
+          button.textContent = '이미지 등록';
+          syncControlState();
+          return;
+        }
+        try {
+          const response = await fetch(API + '/icon/' + encodeURIComponent(iconState.flowerName) + '.webp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'image/webp', 'X-Admin-Pw': password },
+            body: blob,
+          });
+          let result = {};
+          try { result = await response.json(); } catch (error) {}
+          if (!response.ok || !result.ok) throw new Error(result.error || '이미지를 등록하지 못했습니다.');
+          const flowerName = iconState.flowerName;
+          iconVersion[flowerName] = Date.now();
+          closeIconModal();
+          renderFlowers();
+          showStatus("'" + flowerName + "' 이미지를 등록했습니다.");
+        } catch (error) {
+          iconMessage(error.message, true);
+        } finally {
+          button.textContent = '이미지 등록';
+          syncControlState();
+        }
+      }, 'image/webp', 0.85);
     }
 
     document.getElementById('loginButton').onclick = login;
@@ -263,6 +687,30 @@
     document.getElementById('saveOrderButton').onclick = saveOrder;
     document.getElementById('addFlowerButton').onclick = addFlower;
     document.getElementById('newFlower').onkeydown = function (event) { if (event.key === 'Enter') addFlower(); };
+    document.getElementById('flowerSearch').oninput = renderFlowers;
+    document.getElementById('toggleFlowerOrderButton').onclick = function () {
+      if (flowerOrderMode) cancelFlowerOrder(); else setFlowerOrderMode(true);
+    };
+    document.getElementById('cancelFlowerOrderButton').onclick = cancelFlowerOrder;
+    document.getElementById('saveFlowerOrderButton').onclick = saveFlowerOrder;
+    document.addEventListener('pointermove', moveFlowerDrag, { passive: false });
+    document.addEventListener('pointerup', endFlowerDrag);
+    document.addEventListener('pointercancel', endFlowerDrag);
+    document.getElementById('closeIconModalButton').onclick = closeIconModal;
+    document.getElementById('iconModal').onclick = function (event) { if (event.target === this) closeIconModal(); };
+    document.getElementById('iconFile').onchange = readIconFile;
+    document.getElementById('resetCropButton').onclick = resetCrop;
+    document.getElementById('applyCropButton').onclick = applyManualCrop;
+    document.getElementById('iconUploadButton').onclick = uploadIcon;
+    document.querySelectorAll('[data-nudge]').forEach(function (button) {
+      button.onclick = function () {
+        const delta = button.dataset.nudge.split(',').map(Number);
+        nudgeCrop(delta[0], delta[1]);
+      };
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && document.getElementById('iconModal').classList.contains('show')) closeIconModal();
+    });
 
     try {
       const saved = localStorage.getItem('boardPw') || '';
