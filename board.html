@@ -494,6 +494,28 @@
       }
 
       /* 임무 횟수 */
+      .cnt .quick-count {
+        flex: none;
+        min-width: 36px;
+        min-height: 32px;
+        border: 1px solid #cfd4dc;
+        border-radius: 6px;
+        background: #eef2f8;
+        color: #1f3b73;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .count-search {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        padding: 10px 12px;
+        border: 1px solid #cfd4dc;
+        border-radius: 8px;
+        font: inherit;
+        font-size: 16px;
+      }
       .cnt {
         display: flex;
         align-items: center;
@@ -746,6 +768,7 @@
           <h3 style="margin: 0;">임무 횟수</h3>
           <button class="btn sm" style="background: #fdecea; color: #8b1e1e;" onclick="resetAllCounts()">전체 초기화</button>
         </div>
+        <input id="countSearch" class="count-search" type="search" placeholder="길드원 검색" aria-label="임무 횟수 길드원 검색" oninput="renderCounts()">
         <div id="counts"><div class="loading">불러오는 중…</div></div>
         <p class="note">
           각자 자기 숫자를 적어 주세요. 인게임에서 확인한 값을 그대로 넣으면
@@ -1272,8 +1295,18 @@
       }
 
       function renderCounts() {
-        document.getElementById("counts").innerHTML = snap.members
-          .map(function (name, i) {
+        if (!snap) return;
+        var query = document.getElementById("countSearch").value.trim().toLocaleLowerCase("ko");
+        var members = snap.members.map(function (name, i) {
+          return { name: name, index: i, used: (stats[name] || { used: 0 }).used };
+        }).filter(function (member) {
+          return member.name.toLocaleLowerCase("ko").indexOf(query) !== -1;
+        }).sort(function (a, b) {
+          return a.used - b.used || a.name.localeCompare(b.name, "ko");
+        });
+        document.getElementById("counts").innerHTML = members
+          .map(function (member) {
+            var name = member.name, i = member.index;
             var st = stats[name] || { used: 0 };
             var isMe = name === me;
             var full = st.used >= MAX_COUNT;
@@ -1312,10 +1345,12 @@
               (full ? " disabled" : "") +
               ">+</button>" +
               "</span>" +
+              '<button type="button" class="quick-count" onclick="setCountAt(' +
+              i + ', 23)" aria-label="' + esc(name) + ' 임무 횟수 23회로 설정">23</button>' +
               "</div>"
             );
           })
-          .join("");
+          .join("") || '<div class="loading">검색 결과가 없습니다.</div>';
       }
 
       var bumpTimer = null,
