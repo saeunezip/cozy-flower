@@ -12,6 +12,7 @@
     button, input, select { font: inherit; }
     .container { width: min(620px, 100%); margin: auto; padding: 14px 12px 40px; }
     .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .flower-updates-button { margin-left: auto; min-height: 36px; padding: 0 11px; font-size: 12px; white-space: nowrap; }
     .back { color: #1F3B73; background: #e8ebf2; text-decoration: none; border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: bold; }
     h1 { margin: 0; color: #152C57; font-size: 21px; }
     .panel { margin-bottom: 12px; padding: 15px; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
@@ -84,12 +85,14 @@
     .icon-message.bad { background: #ffebee; color: #b71c1c; }
     [hidden] { display: none !important; }
   </style>
+  <link rel="stylesheet" href="flower-updates.css?v=20261023">
 </head>
 <body>
   <main class="container">
     <header class="topbar">
       <a class="back" href="app.html">← 메인</a>
       <h1>관리자</h1>
+      <button id="flowerUpdatesButton" class="flower-updates-button" type="button" aria-haspopup="dialog" aria-expanded="false" hidden>꽃 업데이트 - 확인 중</button>
     </header>
 
     <section id="loginPanel" class="panel">
@@ -195,8 +198,43 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="flowerUpdatesModal">
+    <section class="modal-box flower-updates-box" role="dialog" aria-modal="true" aria-labelledby="flowerUpdatesTitle" tabindex="-1">
+      <div class="modal-head">
+        <span class="modal-title" id="flowerUpdatesTitle">꽃 업데이트</span>
+        <button class="modal-close" type="button" id="closeFlowerUpdates" aria-label="꽃 업데이트 닫기">✕</button>
+      </div>
+      <div class="flower-updates-body">
+        <p class="flower-updates-intro">등록할 꽃을 선택해 주세요. 이름·등급·이미지가 함께 등록됩니다.</p>
+        <div class="flower-updates-toolbar">
+          <span id="flowerUpdatesTime">마지막 확인 기록 없음</span>
+          <button id="refreshFlowerUpdates" type="button" class="ghost">지금 확인</button>
+        </div>
+        <div id="flowerUpdatesMessage" class="flower-updates-message" role="status" aria-live="polite" hidden></div>
+        <div class="flower-updates-tabs" role="tablist" aria-label="꽃 업데이트 분류">
+          <button id="flowerUpdatesReadyTab" type="button" role="tab" aria-selected="true" aria-controls="flowerUpdatesReady">등록 가능</button>
+          <button id="flowerUpdatesReviewTab" type="button" role="tab" aria-selected="false" aria-controls="flowerUpdatesReview">확인·예정</button>
+        </div>
+        <div id="flowerUpdatesReady" role="tabpanel" aria-labelledby="flowerUpdatesReadyTab">
+          <label class="flower-updates-select-all"><input id="selectAllFlowerUpdates" type="checkbox"> 전체 선택 <span id="flowerUpdatesSelection"></span></label>
+          <div id="flowerUpdatesList"></div>
+        </div>
+        <div id="flowerUpdatesReview" role="tabpanel" aria-labelledby="flowerUpdatesReviewTab" hidden>
+          <p class="note">예정 꽃은 바로 등록하지 않습니다. 기존 꽃과 이름만 다른 경우에는 연결할 꽃을 확인해 주세요.</p>
+          <div id="flowerUpdatesReviewList"></div>
+        </div>
+        <p class="flower-updates-credit">꽃 정보 출처: <a href="https://dorazy.art/" target="_blank" rel="noopener noreferrer">코지 꽃수첩 · dorazy.art ↗</a></p>
+      </div>
+      <div class="flower-updates-footer">
+        <span id="flowerUpdatesProgress" role="status" aria-live="polite">이미지는 서버에 저장됩니다.</span>
+        <button id="importFlowerUpdates" type="button" disabled>선택한 0개 등록</button>
+      </div>
+    </section>
+  </div>
+
   <div id="status" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="flower-updates.js?v=20261023"></script>
   <script>
     const API = 'https://guild-flower-worker.saeunezip.workers.dev';
     let password = '';
@@ -218,6 +256,7 @@
     const statusBox = document.getElementById('status');
     const membersBox = document.getElementById('members');
     const flowersBox = document.getElementById('flowers');
+    const flowerUpdates = createFlowerUpdates({ api: api, reloadFlowers: loadFlowers, setBusy: setBusy, isBusy: function () { return busy || flowerOrderMode; } });
 
     function showStatus(message, bad) {
       clearTimeout(toastTimer);
@@ -263,6 +302,7 @@
       document.getElementById('newFlower').disabled = flowerOrderMode;
       document.getElementById('newFlowerGrade').disabled = flowerOrderMode;
       document.getElementById('addFlowerButton').disabled = flowerOrderMode;
+      flowerUpdates.syncControls();
     }
 
     async function api(action, extra) {
@@ -355,6 +395,8 @@
         try { localStorage.setItem('boardPw', password); } catch (error) {}
         document.getElementById('loginPanel').hidden = true;
         document.getElementById('main').hidden = false;
+        document.getElementById('flowerUpdatesButton').hidden = false;
+        flowerUpdates.load();
       } catch (error) {
         password = '';
         showStatus(error.message, true);
@@ -420,6 +462,7 @@
         return Number(a.catalogOrder) - Number(b.catalogOrder) || String(a.flowerId).localeCompare(String(b.flowerId));
       });
       renderFlowers();
+      if (document.getElementById('loginPanel').hidden) flowerUpdates.load();
     }
 
     function renderFlowers() {
