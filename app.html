@@ -981,7 +981,10 @@
       var m = s.match(/^(.*?)\s*\(\s*\+(\d+)\s*\)\s*$/);
       return m ? { name: m[1].trim(), plus: parseInt(m[2], 10) } : { name: s, plus: 0 };
     }
-    function imgUrl(name) { return IMG + encodeURIComponent(name) + '.webp?v=' + IMG_VER; }
+    function imgUrl(name) {
+      var flower = snap && (snap.flowers || []).find(function (f) { return f.name === name; });
+      return IMG + encodeURIComponent(flower && flower.imageKey || (name + '.webp')) + '?v=' + (flower && flower.imageVersion || IMG_VER);
+    }
     function esc(s) {
       return String(s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; });
     }

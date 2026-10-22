@@ -828,7 +828,8 @@
         });
       }
       function imgUrl(name) {
-        return IMG + encodeURIComponent(name) + ".webp?v=" + IMG_VER;
+        var flower = snap && (snap.flowers || []).find(function (f) { return f.name === name; });
+        return IMG + encodeURIComponent(flower && flower.imageKey || (name + ".webp")) + "?v=" + (flower && flower.imageVersion || IMG_VER);
       }
 
       var msgTimer = null;

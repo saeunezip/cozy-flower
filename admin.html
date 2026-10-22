@@ -83,6 +83,16 @@
     details summary { margin-top: 10px; color: #546E7A; font-size: 13px; cursor: pointer; }
     .icon-message { margin-top: 10px; padding: 10px 12px; border-radius: 9px; background: #e8f5e9; color: #2e7d32; font-size: 12px; line-height: 1.5; }
     .icon-message.bad { background: #ffebee; color: #b71c1c; }
+    #iconModal .modal-box { display: flex; flex-direction: column; max-height: 90dvh; overflow: hidden; }
+    #iconModal .modal-body { overflow-y: auto; overscroll-behavior: contain; }
+    #iconModal .modal-head, #iconModal .modal-foot { flex: none; }
+    #iconModal .modal-foot { padding-top: 12px; border-top: 1px solid #eceff1; }
+    .edit-field { display: block; margin-bottom: 13px; font-size: 12px; font-weight: bold; color: #546e7a; }
+    .edit-field > input, .edit-field > select { display: block; width: 100%; margin-top: 6px; }
+    .edit-field > select { height: 43px; padding: 0 10px; border: 1px solid #dfe3e6; border-radius: 9px; background: #fff; }
+    .edit-current-image { display: flex; align-items: center; gap: 12px; margin: 7px 0 12px; }
+    .edit-current-image img { width: 68px; height: 68px; border-radius: 10px; object-fit: cover; background: #f0f0f2; }
+    .edit-current-image span { font-size: 12px; line-height: 1.6; color: #78909c; }
     [hidden] { display: none !important; }
   </style>
   <link rel="stylesheet" href="flower-updates.css?v=20261023">
@@ -161,13 +171,17 @@
   </main>
 
   <div class="modal-overlay" id="iconModal">
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="iconModalTitle" tabindex="-1">
       <div class="modal-head">
-        <span class="modal-title" id="iconModalTitle">이미지 등록</span>
+        <span class="modal-title" id="iconModalTitle">꽃 수정</span>
         <button class="modal-close" type="button" id="closeIconModalButton" aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
-        <input type="file" id="iconFile" accept="image/*">
+        <label class="edit-field">꽃 이름<input id="editFlowerName" type="text" maxlength="50" autocomplete="off"></label>
+        <label class="edit-field">등급<select id="editFlowerGrade"><option>UR+</option><option>UR</option><option>SSR</option><option>SR+</option><option>SR</option></select></label>
+        <p class="note" style="margin:0 0 13px">등급을 바꾸면 추천 점수에 바로 반영됩니다. 보유·개량과 도감 순서는 유지됩니다.</p>
+        <div class="edit-current-image"><img id="editFlowerImage" alt="현재 꽃 이미지"><span id="editFlowerImageNote">현재 이미지<br>새 파일을 선택하지 않으면 유지됩니다.</span></div>
+        <label class="edit-field">이미지 변경<input type="file" id="iconFile" accept="image/*"></label>
         <div id="iconPreviewWrap" hidden>
           <canvas id="iconCanvas" width="200" height="200"></canvas>
           <div class="nudge-pad">
@@ -193,7 +207,7 @@
         <div id="iconMessage"></div>
       </div>
       <div class="modal-foot">
-        <button id="iconUploadButton" type="button" style="width:100%" disabled>이미지 등록</button>
+        <button id="iconUploadButton" type="button" style="width:100%" disabled>저장</button>
       </div>
     </div>
   </div>
@@ -251,7 +265,7 @@
     const iconVersion = {};
     const GRADE_CLASS = { 'UR+':'grade-ur-plus', 'UR':'grade-ur', 'SSR':'grade-ssr', 'SR+':'grade-sr-plus', 'SR':'grade-sr' };
     const DEFAULT_PIXEL_BOX = [112, 1067, 331, 1286];
-    const iconState = { flowerName: '', img: null, box: null };
+    const iconState = { flower: null, img: null, box: null, revision: 0, imageToken: 0, imageLoading: false, previousFocus: null, previousOverflow: '', requestId: '', signature: '' };
 
     const statusBox = document.getElementById('status');
     const membersBox = document.getElementById('members');
@@ -298,7 +312,11 @@
       document.getElementById('saveOrderButton').disabled = !orderDirty;
       document.getElementById('saveFlowerOrderButton').disabled = !flowerOrderDirty;
       document.getElementById('flowerSearch').disabled = flowerOrderMode;
-      document.getElementById('iconUploadButton').disabled = !iconState.img;
+      const editing = iconState.flower;
+      const editedName = document.getElementById('editFlowerName').value.trim();
+      const editedGrade = document.getElementById('editFlowerGrade').value;
+      document.getElementById('iconUploadButton').disabled = !editing || !editedName || iconState.imageLoading ||
+        (!iconState.img && editing.name === editedName && editing.grade === editedGrade);
       document.getElementById('newFlower').disabled = flowerOrderMode;
       document.getElementById('newFlowerGrade').disabled = flowerOrderMode;
       document.getElementById('addFlowerButton').disabled = flowerOrderMode;
@@ -501,7 +519,7 @@
         image.className = 'flower-thumb';
         image.loading = 'lazy';
         image.alt = '';
-        image.src = API + '/icon/' + encodeURIComponent(flower.name) + '.webp?v=' + (iconVersion[flower.name] || 1);
+        image.src = API + '/icon/' + encodeURIComponent(flower.imageKey || (flower.name + '.webp')) + '?v=' + (flower.imageVersion || iconVersion[flower.name] || 1);
         image.onerror = function () { image.style.display = 'none'; };
         thumbWrap.appendChild(fallback);
         thumbWrap.appendChild(image);
@@ -516,8 +534,9 @@
         const imageButton = document.createElement('button');
         imageButton.type = 'button';
         imageButton.className = 'image-button';
-        imageButton.textContent = '이미지 등록';
-        imageButton.onclick = function () { openIconModal(flower.name); };
+        imageButton.textContent = '수정';
+        imageButton.setAttribute('aria-label', flower.name + ' 수정');
+        imageButton.onclick = function () { openIconModal(flower); };
 
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
@@ -660,23 +679,47 @@
       box.textContent = message || '';
     }
 
-    function openIconModal(flowerName) {
-      iconState.flowerName = flowerName;
+    function openIconModal(flower) {
+      if (busy || flowerOrderMode) return;
+      iconState.flower = Object.assign({}, flower);
+      iconState.revision = catalogRevision;
+      iconState.imageToken++;
+      iconState.requestId = ''; iconState.signature = '';
+      iconState.previousFocus = document.activeElement;
+      iconState.previousOverflow = document.body.style.overflow;
       iconState.img = null;
       iconState.box = null;
-      document.getElementById('iconModalTitle').textContent = flowerName + ' 이미지 등록';
+      iconState.imageLoading = false;
+      document.getElementById('iconModalTitle').textContent = '꽃 수정';
+      document.getElementById('editFlowerName').value = flower.name;
+      document.getElementById('editFlowerGrade').value = flower.grade;
+      const currentImage = document.getElementById('editFlowerImage');
+      currentImage.hidden = false;
+      document.getElementById('editFlowerImageNote').innerHTML = '현재 이미지<br>새 파일을 선택하지 않으면 유지됩니다.';
+      currentImage.onerror = function () { currentImage.hidden = true; document.getElementById('editFlowerImageNote').textContent = '등록된 이미지가 없습니다. 새 파일을 선택해 주세요.'; };
+      currentImage.src = API + '/icon/' + encodeURIComponent(flower.imageKey || (flower.name + '.webp')) + '?v=' + (flower.imageVersion || 1);
       document.getElementById('iconFile').value = '';
       document.getElementById('iconPreviewWrap').hidden = true;
       document.getElementById('iconCanvas').getContext('2d').clearRect(0, 0, 200, 200);
       iconMessage('');
       document.getElementById('iconModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
       syncControlState();
+      document.getElementById('editFlowerName').focus();
     }
 
     function closeIconModal() {
+      if (busy) return;
       document.getElementById('iconModal').classList.remove('show');
+      document.body.style.overflow = iconState.previousOverflow;
+      iconState.imageToken++;
+      const previous = iconState.previousFocus;
+      const fallback = iconState.flower && document.querySelector('[data-flower-id="' + iconState.flower.flowerId + '"] .image-button');
+      if (previous && previous.isConnected) previous.focus(); else if (fallback) fallback.focus();
+      iconState.flower = null;
       iconState.img = null;
       iconState.box = null;
+      iconState.imageLoading = false;
       syncControlState();
     }
 
@@ -735,11 +778,18 @@
     function readIconFile(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
+      const token = ++iconState.imageToken;
+      iconState.imageLoading = true;
+      iconState.img = null; iconState.box = null;
+      document.getElementById('iconPreviewWrap').hidden = true;
+      syncControlState();
       iconMessage('');
       const url = URL.createObjectURL(file);
       const image = new Image();
       image.onload = function () {
         URL.revokeObjectURL(url);
+        if (token !== iconState.imageToken || !iconState.flower) return;
+        iconState.imageLoading = false;
         iconState.img = image;
         document.getElementById('iconPreviewWrap').hidden = false;
         resetCrop();
@@ -747,44 +797,44 @@
       };
       image.onerror = function () {
         URL.revokeObjectURL(url);
+        if (token !== iconState.imageToken || !iconState.flower) return;
+        iconState.imageLoading = false;
         iconMessage('이미지를 읽지 못했습니다.', true);
+        syncControlState();
       };
       image.src = url;
     }
 
-    function uploadIcon() {
-      if (!iconState.img || busy) return;
+    async function uploadIcon() {
+      if (!iconState.flower || busy || document.getElementById('iconUploadButton').disabled) return;
       const button = document.getElementById('iconUploadButton');
-      button.disabled = true;
-      button.textContent = '등록 중…';
-      document.getElementById('iconCanvas').toBlob(async function (blob) {
-        if (!blob || blob.type !== 'image/webp') {
-          iconMessage('이 브라우저에서는 WebP 이미지를 만들 수 없습니다. 크롬에서 다시 시도해 주세요.', true);
-          button.textContent = '이미지 등록';
-          syncControlState();
-          return;
-        }
-        try {
-          const response = await fetch(API + '/icon/' + encodeURIComponent(iconState.flowerName) + '.webp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'image/webp', 'X-Admin-Pw': password },
-            body: blob,
+      const editedName = document.getElementById('editFlowerName').value.trim();
+      const editedGrade = document.getElementById('editFlowerGrade').value;
+      setBusy(true); button.textContent = '저장 중…'; iconMessage('');
+      try {
+        let image = null;
+        if (iconState.img) {
+          const blob = await new Promise(function (resolve) { document.getElementById('iconCanvas').toBlob(resolve, 'image/webp', 0.85); });
+          if (!blob || blob.type !== 'image/webp') {
+            throw new Error('이 브라우저에서는 WebP 이미지를 만들 수 없습니다. 크롬에서 다시 시도해 주세요.');
+          }
+          image = await new Promise(function (resolve, reject) {
+            const reader = new FileReader(); reader.onload = function () { resolve(String(reader.result).split(',')[1]); }; reader.onerror = function () { reject(new Error('이미지를 읽지 못했습니다.')); }; reader.readAsDataURL(blob);
           });
-          let result = {};
-          try { result = await response.json(); } catch (error) {}
-          if (!response.ok || !result.ok) throw new Error(result.error || '이미지를 등록하지 못했습니다.');
-          const flowerName = iconState.flowerName;
-          iconVersion[flowerName] = Date.now();
-          closeIconModal();
-          renderFlowers();
-          showStatus("'" + flowerName + "' 이미지를 등록했습니다.");
-        } catch (error) {
-          iconMessage(error.message, true);
-        } finally {
-          button.textContent = '이미지 등록';
-          syncControlState();
         }
-      }, 'image/webp', 0.85);
+        const signature = JSON.stringify([editedName, editedGrade, image]);
+        if (iconState.signature !== signature) { iconState.signature = signature; iconState.requestId = crypto.randomUUID(); }
+        const result = await api('adminEditFlower', { flowerId: iconState.flower.flowerId, expectedRevision: iconState.revision,
+          requestId: iconState.requestId, name: editedName, grade: editedGrade, image: image });
+        await loadFlowers();
+        setBusy(false);
+        closeIconModal();
+        showStatus("'" + result.flower.name + "' 꽃을 수정했습니다.");
+      } catch (error) {
+        iconMessage(error.message, true);
+      } finally {
+        button.textContent = '저장'; setBusy(false);
+      }
     }
 
     document.getElementById('loginButton').onclick = login;
@@ -812,6 +862,8 @@
     document.getElementById('resetCropButton').onclick = resetCrop;
     document.getElementById('applyCropButton').onclick = applyManualCrop;
     document.getElementById('iconUploadButton').onclick = uploadIcon;
+    document.getElementById('editFlowerName').oninput = syncControlState;
+    document.getElementById('editFlowerGrade').onchange = syncControlState;
     document.querySelectorAll('[data-nudge]').forEach(function (button) {
       button.onclick = function () {
         const delta = button.dataset.nudge.split(',').map(Number);
@@ -819,7 +871,16 @@
       };
     });
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && document.getElementById('iconModal').classList.contains('show')) closeIconModal();
+      if (!document.getElementById('iconModal').classList.contains('show')) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeIconModal(); }
+      if (event.key === 'Tab') {
+        const controls = [...document.querySelectorAll('#iconModal button:not(:disabled), #iconModal input:not(:disabled), #iconModal select:not(:disabled), #iconModal summary')].filter(function (n) { return n.getClientRects().length; });
+        const first = controls[0], last = controls[controls.length - 1];
+        if (!first) { event.preventDefault(); return; }
+        if (!document.getElementById('iconModal').contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+        else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
     });
 
     try {
