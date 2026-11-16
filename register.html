@@ -28,7 +28,8 @@
     .chips::-webkit-scrollbar { display: none; }
     .chip { flex: none; border: 1px solid #dfe3e6; border-radius: 999px; background: #fff; color: #546E7A; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
     .chip.active { border-color: #1F3B73; background: #1F3B73; color: #fff; }
-    .status { min-height: 23px; padding: 1px 2px 8px; color: #78909C; font-size: 12px; }
+    .status-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 0 2px 8px; }
+    .status { color: #546E7A; font-size: 12px; }
     .flower-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: start; }
     .flower-row { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 7px; border: 2px solid #e1e6ea; border-radius: 12px; background: #fff; cursor: pointer; position: relative; transition: border-color .12s, background .12s, box-shadow .12s; }
     .flower-row:hover { border-color: #b0bec5; }
@@ -74,6 +75,7 @@
       .member-badge { max-width: 108px; overflow: hidden; text-overflow: ellipsis; }
     }
   </style>
+  <link rel="stylesheet" href="catalog-import.css">
 </head>
 <body>
   <main class="container">
@@ -96,7 +98,10 @@
       </div>
       <button class="switch-member" type="button" id="switchMember">다른 길드원 등록하기</button>
       <div id="notice" class="notice"></div>
-      <div id="status" class="status"></div>
+      <div class="status-row">
+        <span id="status" class="status"></span>
+        <button id="openCatalogImport" class="catalog-action" type="button" disabled>도감 이미지 등록</button>
+      </div>
       <div id="flowerList" class="flower-list"></div>
     </section>
   </main>
@@ -108,6 +113,38 @@
     </div>
   </footer>
 
+  <dialog id="catalogImport" aria-labelledby="catalogImportTitle">
+    <header class="catalog-import-header">
+      <h2 id="catalogImportTitle">도감 이미지 등록</h2>
+      <form method="dialog"><button type="submit" class="catalog-action">닫기</button></form>
+    </header>
+    <div class="catalog-import-body">
+      <p><b>길드 → 전시관 → 꽃 전시</b> 화면의 꽃을 캡처해 주세요. 한 번에 최대 20장씩 추가할 수 있습니다.</p>
+      <input id="catalogImportFiles" type="file" accept="image/*" multiple hidden>
+      <button id="catalogImportPick" class="catalog-action" type="button">이미지 선택</button>
+      <p id="catalogImportStatus" role="status"></p>
+      <div id="catalogImportErrors" role="alert"></div>
+      <details id="catalogImportMatches" hidden>
+        <summary></summary>
+        <ul></ul>
+      </details>
+      <div id="catalogImportReview"></div>
+    </div>
+    <footer class="catalog-import-footer">
+      <span id="catalogImportCount" aria-live="polite"></span>
+      <button id="catalogImportApply" class="save" type="button" disabled>보유 체크에 적용</button>
+    </footer>
+  </dialog>
+
+  <dialog id="catalogImportChooser" aria-labelledby="catalogImportChooserTitle">
+    <header class="catalog-import-header">
+      <h2 id="catalogImportChooserTitle">꽃 이름 선택</h2>
+      <form method="dialog"><button type="submit" class="catalog-action">닫기</button></form>
+    </header>
+    <div id="catalogImportChooserContent" class="catalog-import-body"></div>
+  </dialog>
+
+  <script src="catalog-import.js"></script>
   <script>
     const API = 'https://guild-flower-worker.saeunezip.workers.dev';
     const GRADE_CLASS = { 'UR+':'g-ur-plus', 'UR':'g-ur', 'SSR':'g-ssr', 'SR+':'g-sr-plus', 'SR':'g-sr' };
@@ -125,6 +162,22 @@
     const notice = document.getElementById('notice');
     const savebar = document.getElementById('savebar');
     const saveButton = document.getElementById('save');
+    const importButton = document.getElementById('openCatalogImport');
+    const catalogImport = window.createCatalogImport?.({
+      imageUrl,
+      apply: function (ids) {
+        const imported = state.flowers.filter(function (flower) {
+          if (flower.unlocked || !ids.has(flower.flowerId)) return false;
+          flower.unlocked = true;
+          return true;
+        });
+        if (!imported.length) return;
+        renderFlowers();
+        updateSummary();
+        showNotice(imported.length + '개를 보유로 체크했습니다. 확인 후 저장하기를 눌러 주세요.', 'ok');
+      }
+    });
+    importButton.onclick = function () { catalogImport?.open(state.flowers); };
 
     function apiUrl(member) {
       return API + '/register-data' + (member ? '?member=' + encodeURIComponent(member) : '');
@@ -175,6 +228,7 @@
     }
 
     function showMemberPicker() {
+      catalogImport?.reset();
       state.member = '';
       memberView.hidden = false;
       catalogView.hidden = true;
@@ -315,6 +369,7 @@
         '보유 <b>' + owned + '</b>개 · 개량 <span class="' + (over ? 'warn' : '') + '"><b>' + upgraded + ' / ' + state.maxUpgrades + '</b></span>' +
         (changes ? ' · 변경 ' + changes + '개' : '');
       saveButton.disabled = state.saving || changes === 0 || over;
+      importButton.disabled = !catalogImport || state.saving || state.flowers.length === 0;
       saveButton.textContent = state.saving ? '저장 중…' : '저장하기';
     }
 
@@ -341,6 +396,8 @@
     }
 
     async function loadMember(name) {
+      catalogImport?.reset();
+      importButton.disabled = true;
       clearNotice();
       memberView.hidden = true;
       catalogView.hidden = false;
